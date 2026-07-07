@@ -1,0 +1,120 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Eye } from "lucide-react";
+import Header from "@/components/layout/Header";
+import PageLoader from "@/components/ui/PageLoader";
+import PeriodFilter, { type Period } from "@/components/ui/PeriodFilter";
+import { apiGet } from "@/lib/api";
+import { formatCurrency, formatDateTime, getDateRange } from "@/lib/utils";
+import type { Sale } from "@/types";
+
+export default function SalesPage() {
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<Period>("today");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  useEffect(() => {
+    const fetchSales = async () => {
+      setLoading(true);
+      try {
+        const { from_date, to_date } = getDateRange(period, customFrom, customTo);
+        const data = await apiGet<Sale[]>("/sales", { from_date, to_date });
+        setSales(data);
+      } catch {
+        setSales([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (period !== "custom" || (customFrom && customTo)) {
+      fetchSales();
+    }
+  }, [period, customFrom, customTo]);
+
+  const totalAmount = sales.reduce((sum, s) => sum + parseFloat(String(s.total)), 0);
+
+  return (
+    <div>
+      <Header title="Sales" subtitle="View sales history and invoices" />
+
+      <PeriodFilter
+        period={period}
+        onPeriodChange={setPeriod}
+        customFrom={customFrom}
+        customTo={customTo}
+        onCustomFromChange={setCustomFrom}
+        onCustomToChange={setCustomTo}
+      />
+
+      {!loading && sales.length > 0 && (
+        <div className="mb-5 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2 ring-1 ring-emerald-200/60">
+          <span className="text-sm font-semibold text-emerald-800">
+            {sales.length} sales · {formatCurrency(totalAmount)} total
+          </span>
+        </div>
+      )}
+
+      <div className="table-container">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Date</th>
+              <th>Cashier</th>
+              <th>Subtotal</th>
+              <th>Discount</th>
+              <th>Tax</th>
+              <th>Total</th>
+              <th className="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={8}>
+                  <PageLoader label="Loading sales..." />
+                </td>
+              </tr>
+            ) : sales.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="py-12 text-center font-medium text-slate-500">
+                  No sales found for this period
+                </td>
+              </tr>
+            ) : (
+              sales.map((sale) => (
+                <tr key={sale.id}>
+                  <td>
+                    <span className="font-bold text-primary-700">{sale.invoice_no}</span>
+                  </td>
+                  <td className="text-slate-600">{formatDateTime(sale.created_at)}</td>
+                  <td>{sale.user?.name ?? "—"}</td>
+                  <td>{formatCurrency(sale.subtotal)}</td>
+                  <td className="text-slate-500">{formatCurrency(sale.discount)}</td>
+                  <td className="text-slate-500">{formatCurrency(sale.tax)}</td>
+                  <td className="font-bold text-slate-900">{formatCurrency(sale.total)}</td>
+                  <td>
+                    <div className="flex justify-end">
+                      <Link
+                        href={`/sales/${sale.id}`}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-primary-50 hover:text-primary-700"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        View
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

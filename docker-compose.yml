@@ -1,0 +1,94 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secret}
+      MYSQL_DATABASE: ${DB_DATABASE:-pos_system}
+      MYSQL_USER: ${DB_USERNAME:-pos_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-pos_secret}
+    volumes:
+      - pos_mysql_data:/var/lib/mysql
+    networks:
+      - pos
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD:-root_secret}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  php:
+    build:
+      context: .
+      dockerfile: dockerfiles/php.Dockerfile
+      target: dev
+    restart: unless-stopped
+    volumes:
+      - ./backend:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_HOST: mysql
+      DB_DATABASE: ${DB_DATABASE:-pos_system}
+      DB_USERNAME: ${DB_USERNAME:-pos_user}
+      DB_PASSWORD: ${DB_PASSWORD:-pos_secret}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - pos
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-9051}:80"
+    volumes:
+      - ./backend:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+    networks:
+      - pos
+
+  frontend:
+    build:
+      context: .
+      dockerfile: dockerfiles/next.Dockerfile
+      target: dev
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-9050}:3100"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:9051/api/v1}
+      WATCHPACK_POLLING: "true"
+    depends_on:
+      - nginx
+    networks:
+      - pos
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: unless-stopped
+    ports:
+      - "${PHPMYADMIN_PORT:-9052}:80"
+    environment:
+      PMA_HOST: mysql
+      UPLOAD_LIMIT: 64M
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - pos
+
+volumes:
+  pos_mysql_data:
+
+networks:
+  pos:
+    driver: bridge

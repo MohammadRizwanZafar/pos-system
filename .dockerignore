@@ -1,0 +1,14 @@
+backend/vendor/
+backend/node_modules/
+backend/storage/logs/*
+backend/.env
+
+frontend/node_modules/
+frontend/.next/
+frontend/.env
+frontend/.env.local
+
+.git/
+.idea/
+.vscode/
+*.log
