@@ -17,7 +17,7 @@ import {
 } from "@/lib/auth";
 import type { User } from "@/types";
 
-const ownerOnlyRoutes = ["/dashboard", "/sales", "/reports", "/users", "/settings"];
+const ownerOnlyRoutes = ["/dashboard", "/reports", "/users", "/settings"];
 
 export default function DashboardLayout({
   children,

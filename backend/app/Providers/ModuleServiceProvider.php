@@ -12,6 +12,7 @@ class ModuleServiceProvider extends ServiceProvider
         'Shop',
         'Product',
         'Sale',
+        'Return',
         'Dashboard',
         'Report',
         'Setting',

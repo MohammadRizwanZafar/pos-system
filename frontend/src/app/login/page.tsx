@@ -73,7 +73,7 @@ export default function LoginPage() {
               </span>
             </h2>
             <p className="mt-4 max-w-md text-lg text-slate-400">
-              Complete point of sale solution for local vendors — billing, inventory,
+              Complete point of sale solution for vendors — billing, inventory,
               reports, all in one place.
             </p>
           </div>
@@ -91,7 +91,7 @@ export default function LoginPage() {
         </div>
 
         <p className="relative text-sm text-slate-500">
-          Trusted by local shops & vendors
+          Trusted by shops & vendors
         </p>
       </div>
 

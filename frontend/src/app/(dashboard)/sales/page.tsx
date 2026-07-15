@@ -36,7 +36,10 @@ export default function SalesPage() {
     }
   }, [period, customFrom, customTo]);
 
-  const totalAmount = sales.reduce((sum, s) => sum + parseFloat(String(s.total)), 0);
+  const totalAmount = sales.reduce(
+    (sum, s) => sum + Number(s.net_total ?? s.total),
+    0
+  );
 
   return (
     <div>
@@ -66,6 +69,7 @@ export default function SalesPage() {
               <th>Invoice</th>
               <th>Date</th>
               <th>Cashier</th>
+              <th>Status</th>
               <th>Subtotal</th>
               <th>Discount</th>
               <th>Tax</th>
@@ -76,13 +80,13 @@ export default function SalesPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={9}>
                   <PageLoader label="Loading sales..." />
                 </td>
               </tr>
             ) : sales.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center font-medium text-slate-500">
+                <td colSpan={9} className="py-12 text-center font-medium text-slate-500">
                   No sales found for this period
                 </td>
               </tr>
@@ -94,10 +98,28 @@ export default function SalesPage() {
                   </td>
                   <td className="text-slate-600">{formatDateTime(sale.created_at)}</td>
                   <td>{sale.user?.name ?? "—"}</td>
+                  <td>
+                    {sale.status === "partially_returned" ? (
+                      <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700 ring-1 ring-amber-200">
+                        Partial Return
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
+                        Completed
+                      </span>
+                    )}
+                  </td>
                   <td>{formatCurrency(sale.subtotal)}</td>
                   <td className="text-slate-500">{formatCurrency(sale.discount)}</td>
                   <td className="text-slate-500">{formatCurrency(sale.tax)}</td>
-                  <td className="font-bold text-slate-900">{formatCurrency(sale.total)}</td>
+                  <td className="font-bold text-slate-900">
+                    {formatCurrency(sale.net_total ?? sale.total)}
+                    {sale.refunded_amount && Number(sale.refunded_amount) > 0 ? (
+                      <span className="mt-0.5 block text-xs font-medium text-amber-600">
+                        Refunded {formatCurrency(sale.refunded_amount)}
+                      </span>
+                    ) : null}
+                  </td>
                   <td>
                     <div className="flex justify-end">
                       <Link

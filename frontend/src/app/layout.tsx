@@ -10,7 +10,7 @@ const fontSans = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: "ShopPOS — Point of Sale",
-  description: "Modern point of sale system for local shops and vendors",
+  description: "Modern point of sale system for shops and vendors",
 };
 
 export default function RootLayout({

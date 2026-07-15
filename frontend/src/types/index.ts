@@ -68,6 +68,7 @@ export interface SaleItem {
   product_id: number;
   product_name: string;
   price: string;
+  cost?: string;
   quantity: number;
   total: string;
   product?: Product;
@@ -84,10 +85,58 @@ export interface Sale {
   amount_paid: string;
   change_amount: string;
   note: string | null;
+  status?: "completed" | "partially_returned" | "fully_returned";
+  refunded_amount?: string;
+  net_total?: number;
   created_at: string;
   updated_at: string;
   user?: User;
   items?: SaleItem[];
+}
+
+export interface ReturnableSaleItem {
+  id: number;
+  product_id: number;
+  product_name: string;
+  price: string;
+  quantity: number;
+  returned_quantity: number;
+  remaining_quantity: number;
+  total: string;
+}
+
+export interface ReturnableSale {
+  id: number;
+  invoice_no: string;
+  created_at: string;
+  total: string;
+  user?: User;
+  items: ReturnableSaleItem[];
+}
+
+export interface SaleReturnItem {
+  id: number;
+  sale_return_id: number;
+  sale_item_id: number;
+  product_id: number;
+  product_name: string;
+  price: string;
+  quantity: number;
+  total: string;
+}
+
+export interface SaleReturn {
+  id: number;
+  sale_id: number;
+  user_id: number;
+  return_no: string;
+  refund_amount: string;
+  note: string | null;
+  returned_at: string;
+  created_at: string;
+  user?: User;
+  sale?: Sale;
+  items?: SaleReturnItem[];
 }
 
 export interface CreateSalePayload {

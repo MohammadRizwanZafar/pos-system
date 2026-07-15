@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ShopPOS — How to Use</title>
+  <meta name="description" content="Install ShopPOS, log in by role, and run sales, returns, and reports." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #12201c;
+      --ink-soft: #2a3d36;
+      --cream: #f3f0e8;
+      --paper: #faf8f3;
+      --line: rgba(18, 32, 28, 0.12);
+      --mint: #1f8a6e;
+      --mint-deep: #0f5c49;
+      --glow: #b8e8d4;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: "Manrope", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      line-height: 1.55;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .wrap {
+      width: min(900px, calc(100% - 2.5rem));
+      margin-inline: auto;
+    }
+
+    .top {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(10px);
+      background: rgba(250, 248, 243, 0.9);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .top-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 0;
+    }
+
+    .brand {
+      font-family: "Fraunces", serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.7rem 1.15rem;
+      font: inherit;
+      font-weight: 700;
+      font-size: 0.92rem;
+      border: 0;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+
+    .btn-primary {
+      background: var(--mint);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--mint-deep); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .hero {
+      padding: 3.5rem 0 2.5rem;
+      background:
+        radial-gradient(ellipse 70% 50% at 80% 0%, rgba(31, 138, 110, 0.18), transparent 55%),
+        linear-gradient(180deg, #eef5f1 0%, var(--paper) 100%);
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--mint-deep);
+      margin-bottom: 0.85rem;
+    }
+
+    h1 {
+      font-family: "Fraunces", serif;
+      font-size: clamp(2.2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.08;
+      margin-bottom: 0.75rem;
+    }
+
+    .lead {
+      font-size: 1.08rem;
+      color: var(--ink-soft);
+      max-width: 46ch;
+    }
+
+    section {
+      padding: 2.75rem 0;
+      border-top: 1px solid var(--line);
+    }
+
+    h2 {
+      font-family: "Fraunces", serif;
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+
+    h3 {
+      font-family: "Fraunces", serif;
+      font-size: 1.15rem;
+      margin: 1.35rem 0 0.45rem;
+    }
+
+    p, li { color: var(--ink-soft); }
+    p + p { margin-top: 0.75rem; }
+
+    ol, ul {
+      margin: 0.75rem 0 0 1.2rem;
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .code {
+      margin-top: 1rem;
+      background: var(--ink);
+      color: var(--cream);
+      padding: 1rem 1.15rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .table-wrap {
+      margin-top: 1rem;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      min-width: 520px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 0.75rem 0.9rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    th {
+      background: rgba(31, 138, 110, 0.08);
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    td code, p code, li code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.86em;
+      background: rgba(31, 138, 110, 0.1);
+      padding: 0.1em 0.35em;
+    }
+
+    .steps {
+      display: grid;
+      gap: 0.85rem;
+      margin-top: 1rem;
+    }
+
+    .step {
+      padding: 1rem 1.1rem;
+      border-left: 3px solid var(--mint);
+      background: rgba(31, 138, 110, 0.05);
+    }
+
+    .step strong {
+      display: block;
+      color: var(--ink);
+      margin-bottom: 0.2rem;
+    }
+
+    .cta {
+      margin: 2.5rem 0 4rem;
+      padding: 2rem;
+      background: linear-gradient(155deg, #0b1613 0%, #163028 55%, #0f221c 100%);
+      color: var(--cream);
+    }
+
+    .cta h2 { color: var(--cream); }
+    .cta p { color: rgba(243, 240, 232, 0.75); margin-bottom: 1.25rem; }
+    .cta .btn-primary { background: var(--glow); color: var(--ink); }
+    .cta .btn-primary:hover { background: #fff; }
+
+    footer {
+      padding: 1.5rem 0 2.5rem;
+      color: var(--ink-soft);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="/marketing.html">ShopPOS</a>
+      <div style="display:flex;gap:0.6rem;flex-wrap:wrap">
+        <a class="btn btn-ghost" href="/marketing.html">Marketing</a>
+        <a class="btn btn-primary" href="/login">Open POS</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="wrap">
+      <p class="section-label">Guide</p>
+      <h1>How to use ShopPOS</h1>
+      <p class="lead">Install once, log in by role, then sell, return, and track real profit from one system.</p>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section id="install">
+      <h2>Install</h2>
+      <h3>Docker</h3>
+      <div class="code">git clone https://github.com/MohammadRizwanZafar/pos-system.git
+cd pos-system
+cp .env.example .env
+docker compose up --build -d</div>
+
+      <h3>Windows (Laragon)</h3>
+      <ol>
+        <li>Start Laragon (MySQL on)</li>
+        <li>Clone the project</li>
+        <li>Run <code>scripts\setup-native.bat</code></li>
+        <li>Daily: <code>start-pos.bat</code> / <code>stop-pos.bat</code></li>
+      </ol>
+      <p>Then open the POS app in your browser.</p>
+    </section>
+
+    <section id="login">
+      <h2>Login</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Email</th>
+              <th>Password</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Super Admin</td>
+              <td><code>superadmin@pos.com</code></td>
+              <td><code>password</code></td>
+            </tr>
+            <tr>
+              <td>Owner</td>
+              <td><code>admin@pos.com</code></td>
+              <td><code>password</code></td>
+            </tr>
+            <tr>
+              <td>Cashier</td>
+              <td><code>cashier@pos.com</code></td>
+              <td><code>password</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="menus">
+      <h2>Menus by role</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Menu</th>
+              <th>Super Admin</th>
+              <th>Owner</th>
+              <th>Cashier</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Platform Shops</td><td>Yes</td><td>No</td><td>No</td></tr>
+            <tr><td>Dashboard</td><td>No</td><td>Yes</td><td>No</td></tr>
+            <tr><td>POS</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+            <tr><td>Products</td><td>No</td><td>Full</td><td>View only</td></tr>
+            <tr><td>Sales</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+            <tr><td>Returns</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+            <tr><td>Expenses</td><td>No</td><td>Yes</td><td>No</td></tr>
+            <tr><td>Reports</td><td>No</td><td>Yes</td><td>No</td></tr>
+            <tr><td>Users</td><td>No</td><td>Yes</td><td>No</td></tr>
+            <tr><td>Settings</td><td>No</td><td>Yes</td><td>No</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="super-admin">
+      <h2>Super Admin</h2>
+      <div class="steps">
+        <div class="step"><strong>1. Log in</strong>Use the Super Admin account.</div>
+        <div class="step"><strong>2. Create a shop</strong>Go to Platform → Shops → Create Shop.</div>
+        <div class="step"><strong>3. Set owner access</strong>Add shop details plus owner email/password.</div>
+        <div class="step"><strong>4. Optional cashiers</strong>Add cashiers if needed. Owner then logs in with that account.</div>
+      </div>
+    </section>
+
+    <section id="owner">
+      <h2>Owner</h2>
+      <ul>
+        <li><strong>Products</strong> — Add name, price, cost, stock, category. Inactive products cannot be sold.</li>
+        <li><strong>POS</strong> — Tap products → cart → discount (optional) → cash received → Complete Sale. Use Quick Expense for small costs.</li>
+        <li><strong>Sales</strong> — View invoices by period. Fully returned sales are hidden. Partial returns show net total.</li>
+        <li><strong>Returns</strong> — Enter invoice → set return qty → Process Return. Stock is restored.</li>
+        <li><strong>Expenses / Reports / Users / Settings</strong> — Record costs, view reports, manage staff, update store name/tax/currency.</li>
+      </ul>
+    </section>
+
+    <section id="cashier">
+      <h2>Cashier</h2>
+      <ol>
+        <li>Log in → opens on POS</li>
+        <li>Make sales</li>
+        <li>View shop sales under Sales</li>
+        <li>Process returns under Returns</li>
+        <li>Products are view-only</li>
+      </ol>
+    </section>
+
+    <section id="notes">
+      <h2>Notes</h2>
+      <ul>
+        <li>Stock goes down on sale, up on return</li>
+        <li>You cannot return more than remaining quantity</li>
+        <li>Owner has full shop access; Super Admin manages shops only</li>
+      </ul>
+    </section>
+
+    <div class="cta">
+      <h2>Open the app</h2>
+      <p>Use the login page to start selling right away.</p>
+      <a class="btn btn-primary" href="/login">Go to login</a>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">ShopPOS · How to use</div>
+  </footer>
+</body>
+</html>

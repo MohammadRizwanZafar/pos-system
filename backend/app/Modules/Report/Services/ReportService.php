@@ -17,6 +17,7 @@ class ReportService
         [$start, $end] = $this->resolveRange($type, $fromDate, $toDate);
 
         $query = Sale::with(['items', 'user'])
+            ->active()
             ->whereBetween('created_at', [$start, $end]);
 
         if (! $user->isAdmin()) {
@@ -29,7 +30,7 @@ class ReportService
             'type' => $type,
             'from_date' => $start->toDateString(),
             'to_date' => $end->toDateString(),
-            'total_sales' => round((float) $sales->sum('total'), 2),
+            'total_sales' => round((float) $sales->sum(fn ($sale) => $sale->net_total), 2),
             'order_count' => $sales->count(),
             'profit' => round($this->saleProfitService->calculateProfit($start, $end, $user), 2),
             'sales' => $sales,

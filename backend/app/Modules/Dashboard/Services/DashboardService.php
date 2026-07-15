@@ -16,7 +16,7 @@ class DashboardService
     {
         [$start, $end] = $this->resolveDateRange($period, $fromDate, $toDate);
 
-        $salesQuery = Sale::whereBetween('created_at', [$start, $end]);
+        $salesQuery = Sale::active()->whereBetween('created_at', [$start, $end]);
         $expensesQuery = Expense::whereBetween('expense_date', [$start->toDateString(), $end->toDateString()]);
 
         if (! $user->isAdmin()) {
@@ -24,7 +24,9 @@ class DashboardService
             $expensesQuery->where('user_id', $user->id);
         }
 
-        $totalSales = (float) $salesQuery->sum('total');
+        $totalSales = (float) $salesQuery->clone()
+            ->selectRaw('COALESCE(SUM(total - refunded_amount), 0) as net_sales')
+            ->value('net_sales');
         $orderCount = (int) $salesQuery->count();
         $totalExpenses = (float) $expensesQuery->sum('amount');
         $profit = $this->saleProfitService->calculateProfit($start, $end, $user);

@@ -96,8 +96,8 @@ class SaleService
 
     public function listSales(User $user, ?string $fromDate = null, ?string $toDate = null)
     {
-        return Sale::with(['items', 'user'])
-            ->when(! $user->isAdmin(), fn ($q) => $q->where('user_id', $user->id))
+        return Sale::with(['items', 'user', 'returns'])
+            ->active()
             ->when($fromDate, fn ($q) => $q->whereDate('created_at', '>=', $fromDate))
             ->when($toDate, fn ($q) => $q->whereDate('created_at', '<=', $toDate))
             ->orderByDesc('created_at')
@@ -106,7 +106,7 @@ class SaleService
 
     public function getSale(User $user, Sale $sale): Sale
     {
-        if (! $user->isAdmin() && $sale->user_id !== $user->id) {
+        if (! $user->isAdmin() && ! $user->isCashier()) {
             abort(403, 'Unauthorized');
         }
 

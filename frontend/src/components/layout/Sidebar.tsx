@@ -5,6 +5,7 @@ import {
   ShoppingCart,
   Package,
   Receipt,
+  RotateCcw,
   Wallet,
   BarChart3,
   Users,
@@ -30,7 +31,8 @@ const navItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: true },
   { label: "POS", href: "/pos", icon: ShoppingCart, highlight: true },
   { label: "Products", href: "/products", icon: Package },
-  { label: "Sales", href: "/sales", icon: Receipt, adminOnly: true },
+  { label: "Sales", href: "/sales", icon: Receipt },
+  { label: "Returns", href: "/returns", icon: RotateCcw },
   { label: "Expenses", href: "/expenses", icon: Wallet, adminOnly: true },
   { label: "Reports", href: "/reports", icon: BarChart3, adminOnly: true },
   { label: "Users", href: "/users", icon: Users, adminOnly: true },
@@ -49,7 +51,12 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
 
   const visibleItems = navItems.filter((item) => {
     if (cashier) {
-      return item.href === "/pos" || item.href === "/products" || item.href === "/expenses";
+      return (
+        item.href === "/pos" ||
+        item.href === "/products" ||
+        item.href === "/sales" ||
+        item.href === "/returns"
+      );
     }
     return !item.adminOnly || admin;
   });

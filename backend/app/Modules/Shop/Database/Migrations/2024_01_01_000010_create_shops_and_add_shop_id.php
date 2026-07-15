@@ -20,8 +20,8 @@ return new class extends Migration
         });
 
         DB::table('shops')->insert([
-            'name' => 'Default Shop',
-            'slug' => 'default-shop',
+            'name' => 'Shops',
+            'slug' => 'shop',
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
