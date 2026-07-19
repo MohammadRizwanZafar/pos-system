@@ -15,6 +15,7 @@ import {
   isSuperAdmin,
   getHomeRoute,
 } from "@/lib/auth";
+import { cn } from "@/lib/utils";
 import type { User } from "@/types";
 
 const ownerOnlyRoutes = ["/dashboard", "/reports", "/users", "/settings"];
@@ -82,11 +83,20 @@ export default function DashboardLayout({
     );
   }
 
+  const isPos = pathname === "/pos" || pathname.startsWith("/pos/");
+
   return (
     <div className="app-shell flex min-h-screen">
       <Sidebar user={user} onLogout={handleLogout} />
-      <main className="flex-1 overflow-auto p-6 lg:p-8">
-        <div className="mx-auto max-w-7xl animate-fade-in">{children}</div>
+      <main className={cn("flex-1 overflow-auto", isPos ? "p-4 lg:p-5" : "p-6 lg:p-8")}>
+        <div
+          className={cn(
+            "animate-fade-in",
+            isPos ? "mx-auto h-full max-w-[1600px]" : "mx-auto max-w-7xl"
+          )}
+        >
+          {children}
+        </div>
       </main>
     </div>
   );

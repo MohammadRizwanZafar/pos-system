@@ -3,9 +3,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import Header from "@/components/layout/Header";
+import PeriodFilter, { type Period } from "@/components/ui/PeriodFilter";
+import { Pagination, SearchInput } from "@/components/ui/TableControls";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
-import { formatCurrency, formatDate, getApiErrorMessage } from "@/lib/utils";
-import type { Expense } from "@/types";
+import { formatCurrency, formatDate, getApiErrorMessage, getDateRange } from "@/lib/utils";
+import type { Expense, PaginatedData } from "@/types";
 
 interface ExpenseForm {
   title: string;
@@ -32,28 +34,49 @@ export default function ExpensesPage() {
   const [form, setForm] = useState<ExpenseForm>(emptyForm());
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+  const [period, setPeriod] = useState<Period>("month");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const perPage = 10;
 
   const loadExpenses = async () => {
     setLoading(true);
     try {
-      const data = await apiGet<Expense[]>("/expenses");
-      setExpenses(data);
+      const { from_date, to_date } = getDateRange(period, customFrom, customTo);
+      const data = await apiGet<PaginatedData<Expense>>("/expenses", {
+        page,
+        per_page: perPage,
+        search: search.trim() || undefined,
+        from_date,
+        to_date,
+      });
+      setExpenses(data.items);
+      setTotalPages(data.meta.last_page);
+      setTotal(data.meta.total);
     } catch {
       setExpenses([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadExpenses();
-  }, []);
+    if (period === "custom" && (!customFrom || !customTo)) return;
+    const timer = setTimeout(loadExpenses, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, period, customFrom, customTo]);
 
   const openEdit = (expense: Expense) => {
     setEditing(expense);
     setForm({
       title: expense.title,
-      category: expense.category,
+      category: expense.category ?? "",
       amount: expense.amount,
       expense_date: expense.expense_date.split("T")[0],
       note: expense.note ?? "",
@@ -70,7 +93,7 @@ export default function ExpensesPage() {
     try {
       await apiPost("/expenses", {
         title: form.title,
-        category: form.category,
+        category: form.category || null,
         amount: parseFloat(form.amount),
         expense_date: form.expense_date,
         note: form.note || null,
@@ -95,7 +118,7 @@ export default function ExpensesPage() {
     try {
       await apiPut(`/expenses/${editing.id}`, {
         title: form.title,
-        category: form.category,
+        category: form.category || null,
         amount: parseFloat(form.amount),
         expense_date: form.expense_date,
         note: form.note || null,
@@ -156,11 +179,10 @@ export default function ExpensesPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Category *</label>
+              <label className="mb-1 block text-sm font-medium">Category</label>
               <input
-                required
                 className="input-field"
-                placeholder="e.g. Utilities, Rent"
+                placeholder="e.g. Utilities, Rent (optional)"
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               />
@@ -214,6 +236,34 @@ export default function ExpensesPage() {
         </form>
       )}
 
+      <PeriodFilter
+        period={period}
+        onPeriodChange={(value) => {
+          setPeriod(value);
+          setPage(1);
+        }}
+        customFrom={customFrom}
+        customTo={customTo}
+        onCustomFromChange={(value) => {
+          setCustomFrom(value);
+          setPage(1);
+        }}
+        onCustomToChange={(value) => {
+          setCustomTo(value);
+          setPage(1);
+        }}
+      />
+
+      <SearchInput
+        value={search}
+        onChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        placeholder="Search by title or category..."
+        className="mb-4 max-w-md"
+      />
+
       <div className="table-container">
         <table className="data-table">
           <thead>
@@ -244,15 +294,19 @@ export default function ExpensesPage() {
               expenses.map((exp) => (
                 <tr key={exp.id}>
                   <td>{formatDate(exp.expense_date)}</td>
-                  <td className="font-medium">{exp.title}</td>
+                  <td className="font-medium" title={exp.title}>{exp.title}</td>
                   <td>
-                    <span className="badge-gray">{exp.category}</span>
+                    {exp.category ? (
+                      <span className="badge-gray">{exp.category}</span>
+                    ) : (
+                      "—"
+                    )}
                   </td>
-                  <td className="font-semibold text-red-600">
+                  <td className="font-semibold text-red-600" title={formatCurrency(exp.amount)}>
                     {formatCurrency(exp.amount)}
                   </td>
                   <td>{exp.user?.name ?? "—"}</td>
-                  <td className="max-w-xs truncate text-gray-500">
+                  <td className="max-w-xs truncate text-gray-500" title={exp.note ?? ""}>
                     {exp.note ?? "—"}
                   </td>
                   <td>
@@ -280,6 +334,13 @@ export default function ExpensesPage() {
             )}
           </tbody>
         </table>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          perPage={perPage}
+          onPageChange={setPage}
+        />
       </div>
 
       {modalOpen && editing && (
@@ -310,10 +371,10 @@ export default function ExpensesPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium">Category *</label>
+                  <label className="mb-1 block text-sm font-medium">Category</label>
                   <input
-                    required
                     className="input-field"
+                    placeholder="Optional"
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
                   />

@@ -1,18 +1,19 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { ImagePlus, Pencil, Plus, Trash2, X } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
+import ProductAvatar from "@/components/ui/ProductAvatar";
+import SearchableSelect from "@/components/ui/SearchableSelect";
+import { Pagination, SearchInput } from "@/components/ui/TableControls";
+import { apiDelete, apiGet, apiPost } from "@/lib/api";
 import { isAdmin } from "@/lib/auth";
 import { formatCurrency, getApiErrorMessage } from "@/lib/utils";
-import type { Category, Product } from "@/types";
+import type { Category, PaginatedData, Product } from "@/types";
 
 interface ProductForm {
   name: string;
   category_id: string;
-  sku: string;
-  barcode: string;
   price: string;
   cost: string;
   stock: string;
@@ -22,8 +23,6 @@ interface ProductForm {
 const emptyForm: ProductForm = {
   name: "",
   category_id: "",
-  sku: "",
-  barcode: "",
   price: "",
   cost: "",
   stock: "0",
@@ -32,38 +31,75 @@ const emptyForm: ProductForm = {
 
 export default function ProductsPage() {
   const canManage = isAdmin();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const perPage = 10;
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [prods, cats] = await Promise.all([
-        apiGet<Product[]>("/products"),
-        apiGet<Category[]>("/categories"),
-      ]);
-      setProducts(prods);
-      setCategories(cats);
+      const data = await apiGet<PaginatedData<Product>>("/products", {
+        page,
+        per_page: perPage,
+        search: search.trim() || undefined,
+      });
+      setProducts(data.items);
+      setTotalPages(data.meta.last_page);
+      setTotal(data.meta.total);
     } catch {
       setProducts([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    apiGet<Category[]>("/categories")
+      .then((cats) => setCategories(cats.filter((c) => c.is_active)))
+      .catch(() => setCategories([]));
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(loadData, 300);
+    return () => clearTimeout(timer);
+    // loadData intentionally follows current page/search state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  const resetImageState = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveImage(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
+    resetImageState();
     setError("");
     setModalOpen(true);
   };
@@ -73,15 +109,43 @@ export default function ProductsPage() {
     setForm({
       name: product.name,
       category_id: product.category_id?.toString() ?? "",
-      sku: product.sku ?? "",
-      barcode: product.barcode ?? "",
       price: product.price,
       cost: product.cost ?? "",
       stock: product.stock.toString(),
       is_active: product.is_active,
     });
+    setImageFile(null);
+    setImagePreview(product.image_url);
+    setRemoveImage(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setError("");
     setModalOpen(true);
+  };
+
+  const handleImageChange = (file: File | null) => {
+    if (imagePreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    if (!file) {
+      setImageFile(null);
+      setImagePreview(editing && !removeImage ? editing.image_url : null);
+      return;
+    }
+
+    setImageFile(file);
+    setRemoveImage(false);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveImage = () => {
+    if (imagePreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImageFile(null);
+    setImagePreview(null);
+    setRemoveImage(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -89,24 +153,24 @@ export default function ProductsPage() {
     setSaving(true);
     setError("");
 
-    const payload = {
-      name: form.name,
-      category_id: form.category_id ? Number(form.category_id) : null,
-      sku: form.sku || null,
-      barcode: form.barcode || null,
-      price: parseFloat(form.price),
-      cost: form.cost ? parseFloat(form.cost) : null,
-      stock: parseInt(form.stock, 10) || 0,
-      is_active: form.is_active,
-    };
+    const body = new FormData();
+    body.append("name", form.name);
+    if (form.category_id) body.append("category_id", form.category_id);
+    body.append("price", form.price);
+    if (form.cost) body.append("cost", form.cost);
+    body.append("stock", form.stock || "0");
+    body.append("is_active", form.is_active ? "1" : "0");
+    if (imageFile) body.append("image", imageFile);
+    if (editing && removeImage && !imageFile) body.append("remove_image", "1");
 
     try {
       if (editing) {
-        await apiPut(`/products/${editing.id}`, payload);
+        await apiPost(`/products/${editing.id}`, body);
       } else {
-        await apiPost("/products", payload);
+        await apiPost("/products", body);
       }
       setModalOpen(false);
+      resetImageState();
       loadData();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -125,6 +189,8 @@ export default function ProductsPage() {
     }
   };
 
+  const previewName = form.name || editing?.name || "Product";
+
   return (
     <div>
       <Header
@@ -139,14 +205,26 @@ export default function ProductsPage() {
         )}
       </Header>
 
+      <SearchInput
+        value={search}
+        onChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
+        placeholder="Search by name, SKU, barcode or category..."
+        className="mb-4 max-w-md"
+      />
+
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
-              <th>Name</th>
+              <th>Product</th>
               <th>Category</th>
               <th>SKU</th>
+              <th>Barcode</th>
               <th>Price</th>
+              <th>Cost</th>
               <th>Stock</th>
               <th>Status</th>
               {canManage && <th className="text-right">Actions</th>}
@@ -155,23 +233,38 @@ export default function ProductsPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={canManage ? 7 : 6} className="py-8 text-center text-gray-500">
+                <td colSpan={canManage ? 9 : 8} className="py-8 text-center text-gray-500">
                   Loading...
                 </td>
               </tr>
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan={canManage ? 7 : 6} className="py-8 text-center text-gray-500">
+                <td colSpan={canManage ? 9 : 8} className="py-8 text-center text-gray-500">
                   No products found
                 </td>
               </tr>
             ) : (
               products.map((p) => (
                 <tr key={p.id}>
-                  <td className="font-medium">{p.name}</td>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <ProductAvatar
+                        name={p.name}
+                        imageUrl={p.image_url}
+                        productId={p.id}
+                        size="sm"
+                        className="relative origin-left cursor-zoom-in transition-transform duration-200 ease-out hover:z-20 hover:scale-[2.75] hover:shadow-xl"
+                      />
+                      <span className="font-medium" title={p.name}>{p.name}</span>
+                    </div>
+                  </td>
                   <td>{p.category?.name ?? "—"}</td>
                   <td className="text-gray-500">{p.sku ?? "—"}</td>
-                  <td>{formatCurrency(p.price)}</td>
+                  <td className="font-mono text-gray-500">{p.barcode ?? "—"}</td>
+                  <td title={formatCurrency(p.price)}>{formatCurrency(p.price)}</td>
+                  <td title={p.cost != null && p.cost !== "" ? formatCurrency(p.cost) : ""}>
+                    {p.cost != null && p.cost !== "" ? formatCurrency(p.cost) : "—"}
+                  </td>
                   <td>{p.stock}</td>
                   <td>
                     <span className={p.is_active ? "badge-success" : "badge-gray"}>
@@ -201,6 +294,13 @@ export default function ProductsPage() {
             )}
           </tbody>
         </table>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          perPage={perPage}
+          onPageChange={setPage}
+        />
       </div>
 
       {modalOpen && (
@@ -223,6 +323,49 @@ export default function ProductsPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
+                <label className="mb-1.5 block text-sm font-medium">
+                  Product Image <span className="font-normal text-slate-400">(optional)</span>
+                </label>
+                <div className="flex items-center gap-4">
+                  <ProductAvatar
+                    name={previewName}
+                    imageUrl={imagePreview}
+                    productId={editing?.id ?? 0}
+                    size="lg"
+                  />
+                  <div className="flex flex-1 flex-col gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/jpg"
+                      className="hidden"
+                      onChange={(e) => handleImageChange(e.target.files?.[0] ?? null)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="btn-secondary justify-start"
+                    >
+                      <ImagePlus className="h-4 w-4" />
+                      {imagePreview ? "Change Image" : "Upload Image"}
+                    </button>
+                    {imagePreview && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveImage}
+                        className="text-left text-sm font-semibold text-red-500 hover:text-red-600"
+                      >
+                        Remove image
+                      </button>
+                    )}
+                    <p className="text-xs text-slate-400">
+                      JPG, PNG or WebP up to 4MB. If empty, name avatar is used.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
                 <label className="mb-1 block text-sm font-medium">Name *</label>
                 <input
                   required
@@ -235,18 +378,15 @@ export default function ProductsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium">Category</label>
-                  <select
-                    className="input-field"
+                  <SearchableSelect
                     value={form.category_id}
-                    onChange={(e) => setForm({ ...form, category_id: e.target.value })}
-                  >
-                    <option value="">None</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => setForm({ ...form, category_id: value })}
+                    options={categories.map((c) => ({
+                      value: c.id.toString(),
+                      label: c.name,
+                    }))}
+                    placeholder="Select category..."
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium">Price *</label>
@@ -258,25 +398,6 @@ export default function ProductsPage() {
                     className="input-field"
                     value={form.price}
                     onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1 block text-sm font-medium">SKU</label>
-                  <input
-                    className="input-field"
-                    value={form.sku}
-                    onChange={(e) => setForm({ ...form, sku: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Barcode</label>
-                  <input
-                    className="input-field"
-                    value={form.barcode}
-                    onChange={(e) => setForm({ ...form, barcode: e.target.value })}
                   />
                 </div>
               </div>

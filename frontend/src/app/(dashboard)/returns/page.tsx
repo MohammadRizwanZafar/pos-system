@@ -140,7 +140,9 @@ export default function ReturnsPage() {
             </div>
             <div className="rounded-xl bg-slate-900 px-4 py-3 text-white">
               <p className="text-xs uppercase tracking-wide text-slate-300">Refund preview</p>
-              <p className="text-lg font-bold">{formatCurrency(refundableAmount)}</p>
+              <p className="text-lg font-bold" title={formatCurrency(refundableAmount)}>
+                {formatCurrency(refundableAmount)}
+              </p>
             </div>
           </div>
 

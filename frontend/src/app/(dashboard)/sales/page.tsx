@@ -6,9 +6,10 @@ import { Eye } from "lucide-react";
 import Header from "@/components/layout/Header";
 import PageLoader from "@/components/ui/PageLoader";
 import PeriodFilter, { type Period } from "@/components/ui/PeriodFilter";
+import { Pagination, SearchInput } from "@/components/ui/TableControls";
 import { apiGet } from "@/lib/api";
 import { formatCurrency, formatDateTime, getDateRange } from "@/lib/utils";
-import type { Sale } from "@/types";
+import type { PaginatedData, Sale } from "@/types";
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -16,25 +17,40 @@ export default function SalesPage() {
   const [period, setPeriod] = useState<Period>("today");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const perPage = 10;
 
   useEffect(() => {
     const fetchSales = async () => {
       setLoading(true);
       try {
         const { from_date, to_date } = getDateRange(period, customFrom, customTo);
-        const data = await apiGet<Sale[]>("/sales", { from_date, to_date });
-        setSales(data);
+        const data = await apiGet<PaginatedData<Sale>>("/sales", {
+          from_date,
+          to_date,
+          search: search.trim() || undefined,
+          page,
+          per_page: perPage,
+        });
+        setSales(data.items);
+        setTotalPages(data.meta.last_page);
+        setTotal(data.meta.total);
       } catch {
         setSales([]);
+        setTotal(0);
       } finally {
         setLoading(false);
       }
     };
 
     if (period !== "custom" || (customFrom && customTo)) {
-      fetchSales();
+      const timer = setTimeout(fetchSales, 300);
+      return () => clearTimeout(timer);
     }
-  }, [period, customFrom, customTo]);
+  }, [period, customFrom, customTo, page, search]);
 
   const totalAmount = sales.reduce(
     (sum, s) => sum + Number(s.net_total ?? s.total),
@@ -47,20 +63,40 @@ export default function SalesPage() {
 
       <PeriodFilter
         period={period}
-        onPeriodChange={setPeriod}
+        onPeriodChange={(value) => {
+          setPeriod(value);
+          setPage(1);
+        }}
         customFrom={customFrom}
         customTo={customTo}
-        onCustomFromChange={setCustomFrom}
-        onCustomToChange={setCustomTo}
+        onCustomFromChange={(value) => {
+          setCustomFrom(value);
+          setPage(1);
+        }}
+        onCustomToChange={(value) => {
+          setCustomTo(value);
+          setPage(1);
+        }}
       />
 
-      {!loading && sales.length > 0 && (
-        <div className="mb-5 inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2 ring-1 ring-emerald-200/60">
-          <span className="text-sm font-semibold text-emerald-800">
-            {sales.length} sales · {formatCurrency(totalAmount)} total
-          </span>
-        </div>
-      )}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <SearchInput
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          placeholder="Search by invoice or cashier..."
+          className="w-full max-w-md"
+        />
+        {!loading && sales.length > 0 && (
+          <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2 ring-1 ring-emerald-200/60">
+            <span className="text-sm font-semibold text-emerald-800">
+              {total} sales · {formatCurrency(totalAmount)} on this page
+            </span>
+          </div>
+        )}
+      </div>
 
       <div className="table-container">
         <table className="data-table">
@@ -109,13 +145,16 @@ export default function SalesPage() {
                       </span>
                     )}
                   </td>
-                  <td>{formatCurrency(sale.subtotal)}</td>
-                  <td className="text-slate-500">{formatCurrency(sale.discount)}</td>
-                  <td className="text-slate-500">{formatCurrency(sale.tax)}</td>
-                  <td className="font-bold text-slate-900">
+                  <td title={formatCurrency(sale.subtotal)}>{formatCurrency(sale.subtotal)}</td>
+                  <td className="text-slate-500" title={formatCurrency(sale.discount)}>{formatCurrency(sale.discount)}</td>
+                  <td className="text-slate-500" title={formatCurrency(sale.tax)}>{formatCurrency(sale.tax)}</td>
+                  <td className="font-bold text-slate-900" title={formatCurrency(sale.net_total ?? sale.total)}>
                     {formatCurrency(sale.net_total ?? sale.total)}
                     {sale.refunded_amount && Number(sale.refunded_amount) > 0 ? (
-                      <span className="mt-0.5 block text-xs font-medium text-amber-600">
+                      <span
+                        className="mt-0.5 block text-xs font-medium text-amber-600"
+                        title={`Refunded ${formatCurrency(sale.refunded_amount)}`}
+                      >
                         Refunded {formatCurrency(sale.refunded_amount)}
                       </span>
                     ) : null}
@@ -136,6 +175,13 @@ export default function SalesPage() {
             )}
           </tbody>
         </table>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          perPage={perPage}
+          onPageChange={setPage}
+        />
       </div>
     </div>
   );

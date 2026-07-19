@@ -22,7 +22,9 @@ class ExpenseController extends Controller
         $expenses = $this->expenseService->listExpenses(
             $request->from_date,
             $request->to_date,
-            $request->category
+            $request->category,
+            $request->search,
+            $request->has('per_page') ? $request->integer('per_page') : null
         );
 
         return $this->success($expenses);

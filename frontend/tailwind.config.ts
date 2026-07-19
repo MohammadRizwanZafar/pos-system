@@ -26,10 +26,10 @@ const config: Config = {
           900: "#064e3b",
         },
         sidebar: {
-          DEFAULT: "#0f172a",
-          hover: "#1e293b",
-          active: "#064e3b",
-          border: "#1e293b",
+          DEFAULT: "#0c1f18",
+          hover: "#143028",
+          active: "#065f46",
+          border: "#1a3329",
         },
       },
       boxShadow: {

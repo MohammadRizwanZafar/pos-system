@@ -20,7 +20,9 @@ class ReportController extends Controller
             $request->user(),
             $request->get('type', 'daily'),
             $request->from_date,
-            $request->to_date
+            $request->to_date,
+            $request->search,
+            $request->has('per_page') ? $request->integer('per_page') : null
         );
 
         return $this->success($report);

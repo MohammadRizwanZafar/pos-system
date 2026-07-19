@@ -11,15 +11,32 @@ class UpdateProductRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('is_active')) {
+            $this->merge([
+                'is_active' => filter_var($this->input('is_active'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),
+            ]);
+        }
+
+        if ($this->has('remove_image')) {
+            $this->merge([
+                'remove_image' => filter_var($this->input('remove_image'), FILTER_VALIDATE_BOOLEAN),
+            ]);
+        }
+
+        if ($this->has('category_id') && $this->input('category_id') === '') {
+            $this->merge(['category_id' => null]);
+        }
+    }
+
     public function rules(): array
     {
-        $id = $this->route('product')?->id;
-
         return [
             'category_id' => ['nullable', 'exists:categories,id'],
             'name' => ['sometimes', 'string', 'max:255'],
-            'sku' => ['nullable', 'string', 'max:100', "unique:products,sku,{$id}"],
-            'barcode' => ['nullable', 'string', 'max:100'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+            'remove_image' => ['nullable', 'boolean'],
             'price' => ['sometimes', 'numeric', 'min:0'],
             'cost' => ['nullable', 'numeric', 'min:0'],
             'stock' => ['nullable', 'integer', 'min:0'],

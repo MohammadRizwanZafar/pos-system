@@ -4,8 +4,9 @@ namespace App\Modules\Sale\Services;
 
 use App\Models\User;
 use App\Modules\Return\Models\SaleReturnItem;
-use App\Modules\Sale\Models\SaleItem;
+use App\Modules\Sale\Models\Sale;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class SaleProfitService
 {
@@ -15,33 +16,45 @@ class SaleProfitService
         ?User $user = null,
         bool $adminOnly = true
     ): float {
-        $saleItems = SaleItem::query()
-            ->whereHas('sale', function ($q) use ($start, $end, $user, $adminOnly) {
-                $q->active()->whereBetween('created_at', [$start, $end]);
-
-                if ($user && $adminOnly && ! $user->isAdmin()) {
-                    $q->where('user_id', $user->id);
-                }
-            })
-            ->get(['id', 'sale_id', 'price', 'cost', 'quantity']);
-
-        $returnedBySaleItem = SaleReturnItem::query()
-            ->whereIn('sale_item_id', $saleItems->pluck('id'))
+        $returnedQuantities = SaleReturnItem::query()
             ->selectRaw('sale_item_id, SUM(quantity) as returned_qty')
-            ->groupBy('sale_item_id')
-            ->pluck('returned_qty', 'sale_item_id');
+            ->groupBy('sale_item_id');
+
+        $sales = Sale::query()
+            ->active()
+            ->whereBetween('sales.created_at', [$start, $end])
+            ->when(
+                $user && $adminOnly && ! $user->isAdmin(),
+                fn ($q) => $q->where('sales.user_id', $user->id)
+            )
+            ->join('sale_items', 'sale_items.sale_id', '=', 'sales.id')
+            ->leftJoinSub($returnedQuantities, 'returned', function ($join) {
+                $join->on('returned.sale_item_id', '=', 'sale_items.id');
+            })
+            ->groupBy('sales.id', 'sales.subtotal', 'sales.discount')
+            ->get([
+                'sales.id',
+                'sales.subtotal',
+                'sales.discount',
+                DB::raw('SUM(GREATEST(sale_items.quantity - COALESCE(returned.returned_qty, 0), 0) * sale_items.price) as remaining_revenue'),
+                DB::raw('SUM(GREATEST(sale_items.quantity - COALESCE(returned.returned_qty, 0), 0) * COALESCE(sale_items.cost, 0)) as remaining_cost'),
+            ]);
 
         $profit = 0.0;
 
-        foreach ($saleItems as $item) {
-            $returnedQty = (int) ($returnedBySaleItem[$item->id] ?? 0);
-            $effectiveQty = max(0, (int) $item->quantity - $returnedQty);
+        foreach ($sales as $sale) {
+            $remainingValue = (float) $sale->remaining_revenue;
+            $saleProfit = $remainingValue - (float) $sale->remaining_cost;
 
-            if ($effectiveQty <= 0) {
-                continue;
+            // Discount reduces profit, prorated by the non-returned portion of the sale
+            $subtotal = (float) $sale->subtotal;
+            $discount = (float) $sale->discount;
+
+            if ($discount > 0 && $subtotal > 0) {
+                $saleProfit -= $discount * min(1, $remainingValue / $subtotal);
             }
 
-            $profit += ((float) $item->price - (float) ($item->cost ?? 0)) * $effectiveQty;
+            $profit += $saleProfit;
         }
 
         return round($profit, 2);

@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Plus, X } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { Pagination, SearchInput, usePagedList } from "@/components/ui/TableControls";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/utils";
 import type { User } from "@/types";
@@ -37,6 +38,13 @@ export default function UsersPage() {
   const [form, setForm] = useState<UserForm>(emptyForm);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const { paged, page, setPage, totalPages, total, perPage } = usePagedList(
+    users,
+    search,
+    (u, q) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
+  );
 
   const loadUsers = async () => {
     setLoading(true);
@@ -118,6 +126,13 @@ export default function UsersPage() {
         </button>
       </Header>
 
+      <SearchInput
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by name or email..."
+        className="mb-4 max-w-md"
+      />
+
       <div className="table-container">
         <table className="data-table">
           <thead>
@@ -136,14 +151,14 @@ export default function UsersPage() {
                   Loading...
                 </td>
               </tr>
-            ) : users.length === 0 ? (
+            ) : paged.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-gray-500">
                   No users found
                 </td>
               </tr>
             ) : (
-              users.map((user) => (
+              paged.map((user) => (
                 <tr key={user.id}>
                   <td className="font-medium">{user.name}</td>
                   <td className="text-gray-500">{user.email}</td>
@@ -172,6 +187,13 @@ export default function UsersPage() {
             )}
           </tbody>
         </table>
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          total={total}
+          perPage={perPage}
+          onPageChange={setPage}
+        />
       </div>
 
       {modalOpen && (

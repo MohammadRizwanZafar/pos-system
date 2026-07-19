@@ -31,10 +31,14 @@ class SaleReturnService
             abort(403, 'Unauthorized');
         }
 
-        $items = $sale->items->map(function ($item) use ($sale) {
-            $returnedQty = (int) SaleReturnItem::where('sale_item_id', $item->id)
-                ->whereHas('saleReturn', fn ($q) => $q->where('sale_id', $sale->id))
-                ->sum('quantity');
+        $returnedQuantities = SaleReturnItem::whereIn('sale_item_id', $sale->items->pluck('id'))
+            ->whereHas('saleReturn', fn ($q) => $q->where('sale_id', $sale->id))
+            ->selectRaw('sale_item_id, SUM(quantity) as returned_qty')
+            ->groupBy('sale_item_id')
+            ->pluck('returned_qty', 'sale_item_id');
+
+        $items = $sale->items->map(function ($item) use ($returnedQuantities) {
+            $returnedQty = (int) ($returnedQuantities[$item->id] ?? 0);
 
             $soldQty = (int) $item->quantity;
 
@@ -67,6 +71,9 @@ class SaleReturnService
         }
 
         return DB::transaction(function () use ($user, $sale, $data) {
+            // Serialize returns for the same sale so concurrent requests cannot
+            // both pass the remaining-quantity check.
+            $sale = Sale::whereKey($sale->id)->lockForUpdate()->firstOrFail();
             $sale->load('items');
             $requestItems = collect($data['items'])->keyBy('sale_item_id');
             $saleItems = $sale->items->whereIn('id', $requestItems->keys()->all())->keyBy('id');
@@ -142,10 +149,14 @@ class SaleReturnService
         $sale->refresh()->load('items');
 
         $refundedAmount = (float) SaleReturn::where('sale_id', $sale->id)->sum('refund_amount');
-        $allItemsFullyReturned = $sale->items->every(function ($item) use ($sale) {
-            $returnedQty = (int) SaleReturnItem::where('sale_item_id', $item->id)
-                ->whereHas('saleReturn', fn ($q) => $q->where('sale_id', $sale->id))
-                ->sum('quantity');
+        $returnedQuantities = SaleReturnItem::whereIn('sale_item_id', $sale->items->pluck('id'))
+            ->whereHas('saleReturn', fn ($q) => $q->where('sale_id', $sale->id))
+            ->selectRaw('sale_item_id, SUM(quantity) as returned_qty')
+            ->groupBy('sale_item_id')
+            ->pluck('returned_qty', 'sale_item_id');
+
+        $allItemsFullyReturned = $sale->items->every(function ($item) use ($returnedQuantities) {
+            $returnedQty = (int) ($returnedQuantities[$item->id] ?? 0);
 
             return $returnedQty >= (int) $item->quantity;
         });

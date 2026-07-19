@@ -94,14 +94,38 @@ class SaleService
         });
     }
 
-    public function listSales(User $user, ?string $fromDate = null, ?string $toDate = null)
-    {
-        return Sale::with(['items', 'user', 'returns'])
+    public function listSales(
+        User $user,
+        ?string $fromDate = null,
+        ?string $toDate = null,
+        ?string $search = null,
+        ?int $perPage = null
+    ) {
+        $query = Sale::with(['user:id,name', 'returns:id,sale_id,refund_amount'])
             ->active()
-            ->when($fromDate, fn ($q) => $q->whereDate('created_at', '>=', $fromDate))
-            ->when($toDate, fn ($q) => $q->whereDate('created_at', '<=', $toDate))
-            ->orderByDesc('created_at')
-            ->get();
+            ->when($fromDate, fn ($q) => $q->where('created_at', '>=', "{$fromDate} 00:00:00"))
+            ->when($toDate, fn ($q) => $q->where('created_at', '<=', "{$toDate} 23:59:59"))
+            ->when($search, fn ($q) => $q->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%"));
+            }))
+            ->orderByDesc('created_at');
+
+        if (! $perPage) {
+            return $query->get();
+        }
+
+        $paginator = $query->paginate(min(max($perPage, 1), 100));
+
+        return [
+            'items' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ];
     }
 
     public function getSale(User $user, Sale $sale): Sale

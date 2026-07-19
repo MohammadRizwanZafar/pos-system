@@ -21,7 +21,9 @@ class SaleController extends Controller
         $sales = $this->saleService->listSales(
             $request->user(),
             $request->from_date,
-            $request->to_date
+            $request->to_date,
+            $request->search,
+            $request->has('per_page') ? $request->integer('per_page') : null
         );
 
         return $this->success($sales);

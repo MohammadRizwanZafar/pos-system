@@ -30,6 +30,7 @@ class DashboardService
         $orderCount = (int) $salesQuery->count();
         $totalExpenses = (float) $expensesQuery->sum('amount');
         $profit = $this->saleProfitService->calculateProfit($start, $end, $user);
+        $netProfit = $profit - $totalExpenses;
 
         return [
             'period' => $period,
@@ -39,7 +40,7 @@ class DashboardService
             'order_count' => $orderCount,
             'total_expenses' => round($totalExpenses, 2),
             'profit' => round($profit, 2),
-            'net_profit' => round($profit, 2),
+            'net_profit' => round($netProfit, 2),
         ];
     }
 

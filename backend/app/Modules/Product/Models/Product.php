@@ -2,9 +2,11 @@
 
 namespace App\Modules\Product\Models;
 
+use App\Modules\Category\Models\Category;
 use App\Traits\BelongsToShop;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -12,8 +14,10 @@ class Product extends Model
 
     protected $fillable = [
         'shop_id', 'category_id', 'name', 'sku', 'barcode',
-        'price', 'cost', 'stock', 'is_active',
+        'image', 'price', 'cost', 'stock', 'is_active',
     ];
+
+    protected $appends = ['image_url'];
 
     protected function casts(): array
     {
@@ -22,6 +26,15 @@ class Product extends Model
             'cost' => 'decimal:2',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        if (! $this->image) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->image);
     }
 
     public function category(): BelongsTo

@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   ShoppingCart,
   Package,
+  Tags,
   Receipt,
   RotateCcw,
   Wallet,
@@ -23,20 +24,23 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  iconBg: string;
+  iconColor: string;
   adminOnly?: boolean;
   highlight?: boolean;
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: true },
-  { label: "POS", href: "/pos", icon: ShoppingCart, highlight: true },
-  { label: "Products", href: "/products", icon: Package },
-  { label: "Sales", href: "/sales", icon: Receipt },
-  { label: "Returns", href: "/returns", icon: RotateCcw },
-  { label: "Expenses", href: "/expenses", icon: Wallet, adminOnly: true },
-  { label: "Reports", href: "/reports", icon: BarChart3, adminOnly: true },
-  { label: "Users", href: "/users", icon: Users, adminOnly: true },
-  { label: "Settings", href: "/settings", icon: Settings, adminOnly: true },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, iconBg: "bg-indigo-500/15", iconColor: "text-indigo-400", adminOnly: true },
+  { label: "POS", href: "/pos", icon: ShoppingCart, iconBg: "bg-emerald-500/15", iconColor: "text-emerald-400", highlight: true },
+  { label: "Products", href: "/products", icon: Package, iconBg: "bg-amber-500/15", iconColor: "text-amber-400" },
+  { label: "Categories", href: "/categories", icon: Tags, iconBg: "bg-pink-500/15", iconColor: "text-pink-400" },
+  { label: "Sales", href: "/sales", icon: Receipt, iconBg: "bg-sky-500/15", iconColor: "text-sky-400" },
+  { label: "Returns", href: "/returns", icon: RotateCcw, iconBg: "bg-rose-500/15", iconColor: "text-rose-400" },
+  { label: "Expenses", href: "/expenses", icon: Wallet, iconBg: "bg-orange-500/15", iconColor: "text-orange-400", adminOnly: true },
+  { label: "Reports", href: "/reports", icon: BarChart3, iconBg: "bg-violet-500/15", iconColor: "text-violet-400", adminOnly: true },
+  { label: "Users", href: "/users", icon: Users, iconBg: "bg-cyan-500/15", iconColor: "text-cyan-400", adminOnly: true },
+  { label: "Settings", href: "/settings", icon: Settings, iconBg: "bg-slate-500/20", iconColor: "text-slate-300", adminOnly: true },
 ];
 
 interface SidebarProps {
@@ -54,6 +58,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
       return (
         item.href === "/pos" ||
         item.href === "/products" ||
+        item.href === "/categories" ||
         item.href === "/sales" ||
         item.href === "/returns"
       );
@@ -91,7 +96,7 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition",
                 active
                   ? "bg-gradient-to-r from-primary-600/90 to-primary-500/80 text-white shadow-md"
                   : "text-slate-400 hover:bg-sidebar-hover hover:text-white",
@@ -100,12 +105,19 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                   "ring-1 ring-primary-500/30 hover:ring-primary-400/50"
               )}
             >
-              <Icon
+              <span
                 className={cn(
-                  "h-5 w-5 shrink-0 transition",
-                  active ? "text-white" : "text-slate-500 group-hover:text-emerald-400"
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition group-hover:scale-105",
+                  active ? "bg-white/20" : item.iconBg
                 )}
-              />
+              >
+                <Icon
+                  className={cn(
+                    "h-[18px] w-[18px] shrink-0 transition",
+                    active ? "text-white" : item.iconColor
+                  )}
+                />
+              </span>
               {item.label}
               {item.highlight && !active && (
                 <span className="ml-auto rounded-md bg-primary-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-400">

@@ -10,6 +10,7 @@ class ModuleServiceProvider extends ServiceProvider
     private array $modules = [
         'Auth',
         'Shop',
+        'Category',
         'Product',
         'Sale',
         'Return',

@@ -12,28 +12,57 @@ use Illuminate\Support\Collection;
 class ReportService
 {
     public function __construct(private SaleProfitService $saleProfitService) {}
-    public function salesReport(User $user, string $type = 'daily', ?string $fromDate = null, ?string $toDate = null): array
-    {
+    public function salesReport(
+        User $user,
+        string $type = 'daily',
+        ?string $fromDate = null,
+        ?string $toDate = null,
+        ?string $search = null,
+        ?int $perPage = null
+    ): array {
         [$start, $end] = $this->resolveRange($type, $fromDate, $toDate);
 
-        $query = Sale::with(['items', 'user'])
+        $query = Sale::with('user:id,name')
             ->active()
-            ->whereBetween('created_at', [$start, $end]);
+            ->whereBetween('created_at', [$start, $end])
+            ->when($search, fn ($q) => $q->where(function ($searchQuery) use ($search) {
+                $searchQuery->where('invoice_no', 'like', "%{$search}%")
+                    ->orWhereHas('user', fn ($userQuery) => $userQuery->where('name', 'like', "%{$search}%"));
+            }));
 
         if (! $user->isAdmin()) {
             $query->where('user_id', $user->id);
         }
 
-        $sales = $query->orderBy('created_at')->get();
+        $summaryQuery = clone $query;
+        $totalSales = (float) (clone $summaryQuery)
+            ->selectRaw('COALESCE(SUM(total - refunded_amount), 0) as net_sales')
+            ->value('net_sales');
+        $orderCount = (clone $summaryQuery)->count();
+
+        $salesMeta = null;
+        if ($perPage) {
+            $paginator = $query->orderByDesc('created_at')->paginate(min(max($perPage, 1), 100));
+            $sales = $paginator->items();
+            $salesMeta = [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ];
+        } else {
+            $sales = $query->orderByDesc('created_at')->get();
+        }
 
         return [
             'type' => $type,
             'from_date' => $start->toDateString(),
             'to_date' => $end->toDateString(),
-            'total_sales' => round((float) $sales->sum(fn ($sale) => $sale->net_total), 2),
-            'order_count' => $sales->count(),
+            'total_sales' => round($totalSales, 2),
+            'order_count' => $orderCount,
             'profit' => round($this->saleProfitService->calculateProfit($start, $end, $user), 2),
             'sales' => $sales,
+            'sales_meta' => $salesMeta,
         ];
     }
 

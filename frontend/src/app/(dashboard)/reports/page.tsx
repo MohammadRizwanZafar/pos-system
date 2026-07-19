@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import Header from "@/components/layout/Header";
 import PageLoader from "@/components/ui/PageLoader";
+import { Pagination, SearchInput } from "@/components/ui/TableControls";
 import { apiGet } from "@/lib/api";
 import { isAdmin } from "@/lib/auth";
 import { formatCurrency } from "@/lib/utils";
@@ -30,13 +32,19 @@ export default function ReportsPage() {
   );
   const [report, setReport] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const admin = isAdmin();
+  const perPage = 10;
 
   useEffect(() => {
     const fetchReport = async () => {
       setLoading(true);
       try {
         const params: Record<string, string> = {};
+        params.page = String(page);
+        params.per_page = String(perPage);
+        if (search.trim()) params.search = search.trim();
 
         if (tab === "daily") {
           params.type = "date-range";
@@ -78,29 +86,12 @@ export default function ReportsPage() {
     };
 
     if (tab !== "weekly" || (from && to) || (!from && !to)) {
-      fetchReport();
+      const timer = setTimeout(fetchReport, 300);
+      return () => clearTimeout(timer);
     } else {
       setLoading(false);
     }
-  }, [tab, date, from, to, month]);
-
-  const stats = [
-    {
-      label: "Revenue",
-      value: formatCurrency(report?.total_sales ?? 0),
-      accent: "from-emerald-500 to-teal-600",
-    },
-    {
-      label: "Transactions",
-      value: String(report?.order_count ?? 0),
-      accent: "from-blue-500 to-indigo-600",
-    },
-    {
-      label: "Profit",
-      value: formatCurrency(report?.profit ?? 0),
-      accent: "from-amber-500 to-orange-600",
-    },
-  ];
+  }, [tab, date, from, to, month, page, search]);
 
   return (
     <div>
@@ -118,7 +109,10 @@ export default function ReportsPage() {
           <button
             key={t}
             type="button"
-            onClick={() => setTab(t)}
+            onClick={() => {
+              setTab(t);
+              setPage(1);
+            }}
             className={tab === t ? "tab-pill-active" : "tab-pill-inactive"}
           >
             {t}
@@ -132,7 +126,10 @@ export default function ReportsPage() {
             type="date"
             className="input-field w-auto"
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => {
+              setDate(e.target.value);
+              setPage(1);
+            }}
           />
         )}
         {tab === "weekly" && (
@@ -141,14 +138,20 @@ export default function ReportsPage() {
               type="date"
               className="input-field w-auto border-0 bg-transparent px-2 py-1.5 shadow-none focus:ring-0"
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPage(1);
+              }}
             />
             <span className="text-slate-400">→</span>
             <input
               type="date"
               className="input-field w-auto border-0 bg-transparent px-2 py-1.5 shadow-none focus:ring-0"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
         )}
@@ -157,7 +160,10 @@ export default function ReportsPage() {
             type="month"
             className="input-field w-auto"
             value={month}
-            onChange={(e) => setMonth(e.target.value)}
+            onChange={(e) => {
+              setMonth(e.target.value);
+              setPage(1);
+            }}
           />
         )}
       </div>
@@ -166,48 +172,77 @@ export default function ReportsPage() {
         <PageLoader />
       ) : (
         <>
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {stats.map((stat) => (
-              <div key={stat.label} className="card-stat">
-                <div
-                  className={`absolute -right-6 -top-6 h-28 w-28 rounded-full bg-gradient-to-br ${stat.accent} opacity-10`}
-                />
-                <p className="relative text-sm font-semibold text-slate-500">
-                  {stat.label}
-                </p>
-                <p className="relative mt-2 text-3xl font-bold tracking-tight text-slate-900">
-                  {stat.value}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          {report?.sales && report.sales.length > 0 && (
-            <div className="table-container mt-6">
+          {report?.sales && report.sales.length > 0 ? (
+            <>
+            <SearchInput
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              placeholder="Search by invoice or cashier..."
+              className="mb-4 max-w-md"
+            />
+            <div className="table-container">
               <table className="data-table">
                 <thead>
                   <tr>
                     <th>Invoice</th>
                     <th>Date</th>
                     <th>Cashier</th>
-                    <th className="text-right">Total</th>
+                    <th className="text-right">Sale Total</th>
+                    <th className="text-right">Cash Received</th>
+                    <th className="text-right">Change Returned</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.sales.map((sale) => (
                     <tr key={sale.id}>
-                      <td className="font-bold text-primary-700">{sale.invoice_no}</td>
+                      <td>
+                        <Link
+                          href={`/sales/${sale.id}`}
+                          className="font-bold text-primary-700 transition hover:text-primary-900 hover:underline"
+                        >
+                          {sale.invoice_no}
+                        </Link>
+                      </td>
                       <td className="text-slate-600">
                         {new Date(sale.created_at).toLocaleString()}
                       </td>
                       <td>{sale.user?.name ?? "—"}</td>
-                      <td className="text-right font-bold">
-                        {formatCurrency(sale.total)}
+                      <td className="text-right font-bold" title={formatCurrency(sale.net_total ?? sale.total)}>
+                        {formatCurrency(sale.net_total ?? sale.total)}
+                      </td>
+                      <td
+                        className="text-right font-semibold text-slate-700"
+                        title={formatCurrency(sale.amount_paid)}
+                      >
+                        {formatCurrency(sale.amount_paid)}
+                      </td>
+                      <td
+                        className="text-right font-semibold text-emerald-700"
+                        title={formatCurrency(sale.change_amount)}
+                      >
+                        {formatCurrency(sale.change_amount)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                page={page}
+                totalPages={report.sales_meta?.last_page ?? 1}
+                total={report.sales_meta?.total ?? report.sales.length}
+                perPage={perPage}
+                onPageChange={setPage}
+              />
+            </div>
+            </>
+          ) : (
+            <div className="table-container py-12 text-center">
+              <p className="font-medium text-slate-500">
+                No sales found for this period
+              </p>
             </div>
           )}
         </>

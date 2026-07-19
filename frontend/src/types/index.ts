@@ -5,6 +5,18 @@ export interface ApiResponse<T = unknown> {
   errors?: Record<string, string[]>;
 }
 
+export interface PaginationMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
+
+export interface PaginatedData<T> {
+  items: T[];
+  meta: PaginationMeta;
+}
+
 export interface Role {
   id: number;
   name: "super_admin" | "admin" | "cashier";
@@ -55,6 +67,8 @@ export interface Product {
   name: string;
   sku: string | null;
   barcode: string | null;
+  image: string | null;
+  image_url: string | null;
   price: string;
   cost: string | null;
   stock: number;
@@ -175,7 +189,7 @@ export interface DashboardStats {
   order_count: number;
   total_expenses: number;
   profit: number;
-  net_profit?: number;
+  net_profit: number;
 }
 
 export interface ReportData {
@@ -186,6 +200,7 @@ export interface ReportData {
   order_count: number;
   profit?: number;
   sales?: Sale[];
+  sales_meta?: PaginationMeta | null;
 }
 
 export interface CartItem {

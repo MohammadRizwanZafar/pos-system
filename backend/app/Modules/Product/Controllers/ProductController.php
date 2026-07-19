@@ -21,7 +21,8 @@ class ProductController extends Controller
     {
         $products = $this->productService->listProducts(
             $request->search,
-            $request->category_id
+            $request->integer('category_id') ?: null,
+            $request->has('per_page') ? $request->integer('per_page') : null
         );
 
         return $this->success($products);
@@ -29,7 +30,10 @@ class ProductController extends Controller
 
     public function store(StoreProductRequest $request): JsonResponse
     {
-        $product = $this->productService->createProduct($request->validated());
+        $product = $this->productService->createProduct(
+            $request->validated(),
+            $request->file('image')
+        );
 
         return $this->success($product->load('category'), 'Product created', 201);
     }
@@ -41,7 +45,11 @@ class ProductController extends Controller
 
     public function update(UpdateProductRequest $request, Product $product): JsonResponse
     {
-        $product = $this->productService->updateProduct($product, $request->validated());
+        $product = $this->productService->updateProduct(
+            $product,
+            $request->validated(),
+            $request->file('image')
+        );
 
         return $this->success($product, 'Product updated');
     }

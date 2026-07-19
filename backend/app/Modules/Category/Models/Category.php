@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Modules\Product\Models;
+namespace App\Modules\Category\Models;
 
+use App\Modules\Product\Models\Product;
 use App\Traits\BelongsToShop;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Category extends Model

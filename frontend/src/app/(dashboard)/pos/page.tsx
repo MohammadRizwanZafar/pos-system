@@ -9,14 +9,18 @@ import {
   X,
   ShoppingBag,
   Banknote,
-  Receipt,
+  ScanBarcode,
   Wallet,
+  Check,
 } from "lucide-react";
 import { apiGet, apiPost } from "@/lib/api";
 import { useCartStore } from "@/store/cartStore";
 import PageLoader from "@/components/ui/PageLoader";
-import { cn, formatCurrency, getApiErrorMessage, getProductTileColor } from "@/lib/utils";
-import type { Category, Product, Sale, StoreSettings } from "@/types";
+import ProductAvatar from "@/components/ui/ProductAvatar";
+import SearchableSelect from "@/components/ui/SearchableSelect";
+import { Pagination } from "@/components/ui/TableControls";
+import { cn, formatCurrency, getApiErrorMessage } from "@/lib/utils";
+import type { Category, PaginatedData, Product, Sale, StoreSettings } from "@/types";
 
 const EXPENSE_CATEGORIES = ["Supplies", "Utilities", "Rent", "Transport", "Other"];
 
@@ -26,6 +30,9 @@ export default function POSPage() {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState<number | "">("");
+  const [productPage, setProductPage] = useState(1);
+  const [productPages, setProductPages] = useState(1);
+  const [productTotal, setProductTotal] = useState(0);
   const [cashAmount, setCashAmount] = useState("");
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
@@ -36,7 +43,7 @@ export default function POSPage() {
   const [expenseSaving, setExpenseSaving] = useState(false);
   const [expenseForm, setExpenseForm] = useState({
     title: "",
-    category: "Supplies",
+    category: "",
     amount: "",
     note: "",
   });
@@ -55,19 +62,14 @@ export default function POSPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [prods, cats, storeSettings] = await Promise.all([
-          apiGet<Product[]>("/products"),
+        const [cats, storeSettings] = await Promise.all([
           apiGet<Category[]>("/categories"),
           apiGet<StoreSettings>("/settings").catch(() => null),
         ]);
-        setProducts(prods);
-        setCategories(cats);
+        setCategories(cats.filter((c) => c.is_active));
         setSettings(storeSettings);
       } catch {
-        setProducts([]);
         setCategories([]);
-      } finally {
-        setLoading(false);
       }
     };
     load();
@@ -76,17 +78,25 @@ export default function POSPage() {
   useEffect(() => {
     const timer = setTimeout(async () => {
       try {
-        const params: Record<string, unknown> = {};
+        setLoading(true);
+        const params: Record<string, unknown> = {
+          page: productPage,
+          per_page: 20,
+        };
         if (search) params.search = search;
         if (categoryId) params.category_id = categoryId;
-        const prods = await apiGet<Product[]>("/products", params);
-        setProducts(prods);
+        const data = await apiGet<PaginatedData<Product>>("/products", params);
+        setProducts(data.items);
+        setProductPages(data.meta.last_page);
+        setProductTotal(data.meta.total);
       } catch {
         // keep current list
+      } finally {
+        setLoading(false);
       }
     }, 300);
     return () => clearTimeout(timer);
-  }, [search, categoryId]);
+  }, [search, categoryId, productPage]);
 
   const taxPercent = settings ? parseFloat(settings.tax_percent) : 0;
   const currencySymbol = settings?.currency_symbol ?? "Rs.";
@@ -140,12 +150,12 @@ export default function POSPage() {
     try {
       await apiPost("/expenses", {
         title: expenseForm.title,
-        category: expenseForm.category,
+        category: expenseForm.category || null,
         amount: parseFloat(expenseForm.amount),
         expense_date: new Date().toISOString().split("T")[0],
         note: expenseForm.note || null,
       });
-      setExpenseForm({ title: "", category: "Supplies", amount: "", note: "" });
+      setExpenseForm({ title: "", category: "", amount: "", note: "" });
       setExpenseOpen(false);
       setSuccess("Expense recorded!");
     } catch (err) {
@@ -156,22 +166,15 @@ export default function POSPage() {
   };
 
   return (
-    <div className="-mx-2 flex h-[calc(100vh-4rem)] flex-col lg:-mx-0">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+    <div className="flex h-[calc(100vh-3.5rem)] flex-col lg:h-[calc(100vh-4rem)]">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-sm">
-              <ShoppingBag className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-                Point of Sale
-              </h1>
-              <p className="text-sm font-medium text-slate-500">
-                {settings?.store_name ?? "Tap products to add to cart"}
-              </p>
-            </div>
-          </div>
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+            Point of Sale
+          </h1>
+          <p className="text-sm font-medium text-slate-500">
+            {settings?.store_name ?? "Tap products to add to cart"}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -180,16 +183,17 @@ export default function POSPage() {
               setExpenseOpen(true);
               setError("");
             }}
-            className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+            className="flex items-center gap-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3.5 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
           >
             <Wallet className="h-4 w-4" />
             Quick Expense
           </button>
-          <div className="flex items-center gap-2 rounded-xl bg-white px-4 py-2 shadow-sm ring-1 ring-slate-200">
-          <Receipt className="h-4 w-4 text-primary" />
-          <span className="text-sm font-semibold text-slate-600">
-            {items.length} item{items.length !== 1 ? "s" : ""} in cart
-          </span>
+          <div className="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 ring-1 ring-emerald-200/70 sm:flex">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </span>
+            <span className="text-xs font-bold text-emerald-700">Ready to sell</span>
           </div>
         </div>
       </div>
@@ -197,7 +201,7 @@ export default function POSPage() {
       {(error || success) && (
         <div
           className={cn(
-            "mb-4 flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold",
+            "mb-3 flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold",
             error
               ? "border border-red-200 bg-red-50 text-red-600"
               : "border border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -219,24 +223,32 @@ export default function POSPage() {
 
       <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
         {/* Products */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-          <div className="border-b border-slate-100 p-4">
-            <div className="relative mb-3">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
+          <div className="space-y-3 border-b border-slate-100 p-4">
+            <div className="relative">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search products or barcode..."
-                className="input-field pl-10"
+                placeholder="Search products by name or barcode..."
+                className="input-field py-3 pl-10 pr-11 text-[15px]"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setProductPage(1);
+                }}
+                autoFocus
               />
+              <ScanBarcode className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-thin">
               <button
                 type="button"
-                onClick={() => setCategoryId("")}
+                onClick={() => {
+                  setCategoryId("");
+                  setProductPage(1);
+                }}
                 className={cn(
-                  "rounded-full px-3.5 py-1.5 text-xs font-bold transition",
+                  "shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition",
                   categoryId === ""
                     ? "bg-primary text-white shadow-sm"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -248,9 +260,12 @@ export default function POSPage() {
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => setCategoryId(c.id)}
+                  onClick={() => {
+                    setCategoryId(c.id);
+                    setProductPage(1);
+                  }}
                   className={cn(
-                    "rounded-full px-3.5 py-1.5 text-xs font-bold transition",
+                    "shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition",
                     categoryId === c.id
                       ? "bg-primary text-white shadow-sm"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -271,114 +286,176 @@ export default function POSPage() {
                 <p className="font-semibold text-slate-500">No products found</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                {products.map((product) => (
+              <>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                  {products.map((product) => (
                   <button
                     key={product.id}
                     type="button"
                     onClick={() => addItem(product)}
                     disabled={product.stock <= 0}
-                    className={cn(
-                      "pos-product-tile bg-gradient-to-br",
-                      getProductTileColor(product.id)
-                    )}
+                    className="pos-product-tile group"
                   >
-                    <p className="line-clamp-2 text-sm font-bold text-slate-800">
-                      {product.name}
-                    </p>
-                    {product.category && (
-                      <p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">
-                        {product.category.name}
+                    <ProductAvatar
+                      name={product.name}
+                      imageUrl={product.image_url}
+                      productId={product.id}
+                      size="tile"
+                    />
+                    <div className="flex flex-1 flex-col px-1 pb-1 pt-3">
+                      <p
+                        className="line-clamp-2 min-h-[2.5rem] text-left text-sm font-bold leading-snug text-slate-800"
+                        title={product.name}
+                      >
+                        {product.name}
                       </p>
-                    )}
-                    <p className="mt-auto pt-3 text-lg font-extrabold text-primary-700">
-                      {formatCurrency(product.price, currencySymbol)}
-                    </p>
-                    <p
-                      className={cn(
-                        "mt-1 text-xs font-semibold",
-                        product.stock <= 5 ? "text-amber-600" : "text-slate-400"
-                      )}
-                    >
-                      {product.stock <= 0 ? "Out of stock" : `${product.stock} in stock`}
-                    </p>
+                      <p
+                        className="mt-auto pt-2 text-left text-lg font-extrabold text-primary-600"
+                        title={formatCurrency(product.price, currencySymbol)}
+                      >
+                        {formatCurrency(product.price, currencySymbol)}
+                      </p>
+                      <p
+                        className={cn(
+                          "mt-0.5 text-left text-xs font-semibold",
+                          product.stock <= 0
+                            ? "text-red-500"
+                            : product.stock <= 5
+                              ? "text-amber-600"
+                              : "text-slate-400"
+                        )}
+                      >
+                        {product.stock <= 0
+                          ? "Out of stock"
+                          : `In Stock: ${product.stock}`}
+                      </p>
+                    </div>
                   </button>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <div className="mt-4 overflow-hidden rounded-xl border border-slate-100">
+                  <Pagination
+                    page={productPage}
+                    totalPages={productPages}
+                    total={productTotal}
+                    perPage={20}
+                    onPageChange={setProductPage}
+                  />
+                </div>
+              </>
             )}
           </div>
         </div>
 
         {/* Cart */}
-        <div className="pos-cart-panel w-full shrink-0 lg:w-[22rem] xl:w-96">
-          <div className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white px-5 py-4">
-            <h2 className="font-bold text-slate-900">Current Order</h2>
-            <p className="text-xs font-medium text-slate-500">
-              {items.length} item(s) · {formatCurrency(subtotal, currencySymbol)}
-            </p>
+        <div className="pos-cart-panel w-full shrink-0 lg:w-[23rem] xl:w-[26rem]">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Current Order</h2>
+              <p className="text-xs font-medium text-slate-500">
+                {items.length} item{items.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={clearCart}
+              disabled={items.length === 0}
+              className="rounded-xl p-2.5 text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+              title="Clear cart"
+            >
+              <Trash2 className="h-[18px] w-[18px]" />
+            </button>
           </div>
 
-          <div className="min-h-[140px] flex-1 overflow-y-auto p-4">
+          <div className="min-h-[120px] flex-1 overflow-y-auto px-4 py-3">
             {items.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center py-8 text-center">
-                <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-                  <ShoppingBag className="h-7 w-7 text-slate-300" />
+              <div className="flex h-full flex-col items-center justify-center py-10 text-center">
+                <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+                  <ShoppingBag className="h-8 w-8 text-slate-300" />
                 </div>
                 <p className="text-sm font-semibold text-slate-400">Cart is empty</p>
                 <p className="mt-1 text-xs text-slate-400">Tap a product to start</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {items.map((item) => (
-                  <div
-                    key={item.product.id}
-                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/50 p-3"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-slate-800">
-                        {item.product.name}
-                      </p>
-                      <p className="text-xs font-medium text-slate-500">
-                        {formatCurrency(item.product.price, currencySymbol)} each
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-0.5 rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-slate-200">
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                        className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100"
-                      >
-                        <Minus className="h-3.5 w-3.5" />
-                      </button>
-                      <span className="w-7 text-center text-sm font-bold text-slate-900">
-                        {item.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                        className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.product.id)}
-                      className="rounded-lg p-2 text-red-500 hover:bg-red-50"
+              <div className="space-y-2.5">
+                {items.map((item) => {
+                  const lineTotal = parseFloat(item.product.price) * item.quantity;
+                  return (
+                    <div
+                      key={item.product.id}
+                      className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-3"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
+                      <ProductAvatar
+                        name={item.product.name}
+                        imageUrl={item.product.image_url}
+                        productId={item.product.id}
+                        size="sm"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-slate-800" title={item.product.name}>
+                          {item.product.name}
+                        </p>
+                        <p
+                          className="text-xs font-medium text-slate-500"
+                          title={formatCurrency(item.product.price, currencySymbol)}
+                        >
+                          {formatCurrency(item.product.price, currencySymbol)}
+                        </p>
+                        <div className="mt-2 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-0.5 rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-slate-200">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(item.product.id, item.quantity - 1)
+                              }
+                              className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100"
+                            >
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                            <span className="w-7 text-center text-sm font-bold text-slate-900">
+                              {item.quantity}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                updateQuantity(item.product.id, item.quantity + 1)
+                              }
+                              className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span
+                              className="text-sm font-extrabold text-slate-900"
+                              title={formatCurrency(lineTotal, currencySymbol)}
+                            >
+                              {formatCurrency(lineTotal, currencySymbol)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeItem(item.product.id)}
+                              className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
 
-          <div className="space-y-3 border-t border-slate-100 bg-slate-50/50 p-4">
-            <div className="space-y-2 text-sm">
+          <div className="space-y-3 border-t border-slate-100 bg-slate-50/40 p-4">
+            <div className="space-y-2.5 text-sm">
               <div className="flex justify-between font-medium text-slate-600">
                 <span>Subtotal</span>
-                <span>{formatCurrency(subtotal, currencySymbol)}</span>
+                <span className="font-semibold text-slate-800" title={formatCurrency(subtotal, currencySymbol)}>
+                  {formatCurrency(subtotal, currencySymbol)}
+                </span>
               </div>
               <div className="flex items-center justify-between gap-2">
                 <span className="font-medium text-slate-600">Discount</span>
@@ -386,18 +463,26 @@ export default function POSPage() {
                   type="number"
                   min="0"
                   step="0.01"
-                  className="input-field w-28 bg-white text-right text-sm"
+                  className="input-field w-28 bg-white py-2 text-right text-sm font-semibold"
                   value={discount || ""}
                   onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
                 />
               </div>
               <div className="flex justify-between font-medium text-slate-600">
                 <span>Tax ({taxPercent}%)</span>
-                <span>{formatCurrency(tax, currencySymbol)}</span>
+                <span className="font-semibold text-slate-800" title={formatCurrency(tax, currencySymbol)}>
+                  {formatCurrency(tax, currencySymbol)}
+                </span>
               </div>
-              <div className="flex justify-between rounded-xl bg-slate-900 px-4 py-3 text-base font-bold text-white">
-                <span>Total</span>
-                <span>{formatCurrency(total, currencySymbol)}</span>
+              <div className="flex items-center justify-between rounded-xl bg-slate-900 px-4 py-3.5 shadow-lg">
+                <span className="text-sm font-semibold text-slate-300">Total Payable</span>
+                <span
+                  className="text-xl font-extrabold tracking-tight text-emerald-400"
+                  title={formatCurrency(total, currencySymbol)}
+                >
+                  {formatCurrency(total, currencySymbol)}
+                </span>
               </div>
             </div>
 
@@ -410,19 +495,22 @@ export default function POSPage() {
                 type="number"
                 min="0"
                 step="0.01"
-                className="input-field bg-white text-lg font-bold"
+                className="input-field bg-white py-3 text-lg font-bold"
                 placeholder="0.00"
                 value={cashAmount}
                 onChange={(e) => setCashAmount(e.target.value)}
               />
             </div>
 
-            {paid > 0 && (
-              <div className="flex justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
-                <span>Change</span>
-                <span className="text-lg">{formatCurrency(change, currencySymbol)}</span>
-              </div>
-            )}
+            <div className="flex items-center justify-between rounded-xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3">
+              <span className="text-sm font-bold text-emerald-800">Change</span>
+              <span
+                className="text-xl font-extrabold text-emerald-700"
+                title={formatCurrency(change, currencySymbol)}
+              >
+                {formatCurrency(change, currencySymbol)}
+              </span>
+            </div>
 
             <input
               type="text"
@@ -432,24 +520,21 @@ export default function POSPage() {
               onChange={(e) => setNote(e.target.value)}
             />
 
-            <div className="flex gap-2 pt-1">
-              <button
-                type="button"
-                onClick={clearCart}
-                disabled={items.length === 0}
-                className="btn-secondary flex-1"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={handleCompleteSale}
-                disabled={processing || items.length === 0}
-                className="btn-primary flex-[1.4] py-3 text-base"
-              >
-                {processing ? "Processing..." : "Complete Sale"}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleCompleteSale}
+              disabled={processing || items.length === 0}
+              className="btn-primary w-full py-3.5 text-base shadow-lg shadow-emerald-500/25"
+            >
+              {processing ? (
+                "Processing..."
+              ) : (
+                <>
+                  <Check className="h-5 w-5" />
+                  Complete Sale
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -478,19 +563,18 @@ export default function POSPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium">Category *</label>
-                  <select
-                    required
-                    className="input-field"
+                  <label className="mb-1 block text-sm font-medium">Category</label>
+                  <SearchableSelect
                     value={expenseForm.category}
-                    onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })}
-                  >
-                    {EXPENSE_CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) =>
+                      setExpenseForm({ ...expenseForm, category: value })
+                    }
+                    options={EXPENSE_CATEGORIES.map((cat) => ({
+                      value: cat,
+                      label: cat,
+                    }))}
+                    placeholder="Select category..."
+                  />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium">Amount *</label>
@@ -501,7 +585,9 @@ export default function POSPage() {
                     step="0.01"
                     className="input-field"
                     value={expenseForm.amount}
-                    onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })}
+                    onChange={(e) =>
+                      setExpenseForm({ ...expenseForm, amount: e.target.value })
+                    }
                   />
                 </div>
               </div>

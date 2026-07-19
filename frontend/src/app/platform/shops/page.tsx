@@ -10,6 +10,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { Pagination, SearchInput, usePagedList } from "@/components/ui/TableControls";
 import { apiGet, apiPost } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/utils";
 import type { Shop, User } from "@/types";
@@ -62,6 +63,16 @@ export default function PlatformShopsPage() {
   const [cashierForm, setCashierForm] = useState<CashierForm>(emptyCashierForm);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const { paged, page, setPage, totalPages, total, perPage } = usePagedList(
+    shops,
+    search,
+    (s, q) =>
+      s.name.toLowerCase().includes(q) ||
+      (s.owner?.email ?? "").toLowerCase().includes(q) ||
+      (s.owner?.name ?? "").toLowerCase().includes(q)
+  );
 
   const loadShops = async () => {
     setLoading(true);
@@ -174,12 +185,19 @@ export default function PlatformShopsPage() {
         </div>
       </div>
 
+      <SearchInput
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by shop name or owner..."
+        className="max-w-md"
+      />
+
       <div className="space-y-3">
         {loading ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500">
             Loading shops...
           </div>
-        ) : shops.length === 0 ? (
+        ) : paged.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
             <Store className="mx-auto h-12 w-12 text-slate-300" />
             <p className="mt-4 font-semibold text-slate-700">No shops yet</p>
@@ -188,7 +206,7 @@ export default function PlatformShopsPage() {
             </p>
           </div>
         ) : (
-          shops.map((shop) => {
+          paged.map((shop) => {
             const expanded = expandedId === shop.id;
             const detail = shopDetails[shop.id];
             const staff = detail?.users ?? [];
@@ -218,7 +236,10 @@ export default function PlatformShopsPage() {
                         {shop.is_active ? "Active" : "Inactive"}
                       </span>
                     </div>
-                    <p className="mt-0.5 truncate text-sm text-slate-500">
+                    <p
+                      className="mt-0.5 truncate text-sm text-slate-500"
+                      title={`Owner: ${shop.owner?.email ?? "—"} · ${shop.cashiers_count ?? 0} cashier(s)`}
+                    >
                       Owner: {shop.owner?.email ?? "—"} · {shop.cashiers_count ?? 0}{" "}
                       cashier(s)
                     </p>
@@ -324,6 +345,17 @@ export default function PlatformShopsPage() {
               </div>
             );
           })
+        )}
+        {!loading && total > perPage && (
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              perPage={perPage}
+              onPageChange={setPage}
+            />
+          </div>
         )}
       </div>
 

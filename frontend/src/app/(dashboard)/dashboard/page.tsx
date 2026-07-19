@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DollarSign, Receipt, TrendingUp, ShoppingBag, Sparkles } from "lucide-react";
+import { DollarSign, Receipt, TrendingUp, ShoppingBag, Wallet } from "lucide-react";
 import Header from "@/components/layout/Header";
 import PageLoader from "@/components/ui/PageLoader";
 import PeriodFilter, { type Period } from "@/components/ui/PeriodFilter";
@@ -36,6 +36,7 @@ export default function DashboardPage() {
           order_count: 0,
           total_expenses: 0,
           profit: 0,
+          net_profit: 0,
         });
       } finally {
         setLoading(false);
@@ -53,32 +54,40 @@ export default function DashboardPage() {
       value: formatCurrency(stats?.total_sales ?? 0),
       icon: DollarSign,
       gradient: "from-emerald-500 to-teal-600",
-      bg: "bg-emerald-50",
-      iconColor: "text-emerald-600",
+      glow: "shadow-emerald-500/30",
+      accent: "text-emerald-600",
     },
     {
-      label: "Transactions",
+      label: "No of Sales",
       value: String(stats?.order_count ?? 0),
       icon: Receipt,
       gradient: "from-blue-500 to-indigo-600",
-      bg: "bg-blue-50",
-      iconColor: "text-blue-600",
+      glow: "shadow-blue-500/30",
+      accent: "text-blue-600",
     },
     {
       label: "Expenses",
       value: formatCurrency(stats?.total_expenses ?? 0),
       icon: ShoppingBag,
       gradient: "from-violet-500 to-purple-600",
-      bg: "bg-violet-50",
-      iconColor: "text-violet-600",
+      glow: "shadow-violet-500/30",
+      accent: "text-violet-600",
     },
     {
-      label: "Profit",
-      value: formatCurrency(stats?.profit ?? stats?.net_profit ?? 0),
+      label: "Total Profit",
+      value: formatCurrency(Number(stats?.profit ?? 0)),
       icon: TrendingUp,
       gradient: "from-amber-500 to-orange-600",
-      bg: "bg-amber-50",
-      iconColor: "text-amber-600",
+      glow: "shadow-amber-500/30",
+      accent: "text-amber-600",
+    },
+    {
+      label: "Net Profit",
+      value: formatCurrency(Number(stats?.net_profit ?? 0)),
+      icon: Wallet,
+      gradient: "from-teal-500 to-cyan-600",
+      glow: "shadow-teal-500/30",
+      accent: "text-teal-600",
     },
   ];
 
@@ -98,45 +107,41 @@ export default function DashboardPage() {
       {loading ? (
         <PageLoader />
       ) : (
-        <>
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-            {cards.map((card) => {
-              const Icon = card.icon;
-              return (
-                <div key={card.label} className="card-stat group">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+          {cards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div key={card.label} className="card-stat group">
+                <div
+                  className={`absolute -right-6 -top-6 h-28 w-28 rounded-full bg-gradient-to-br ${card.gradient} opacity-10 blur-sm transition duration-300 group-hover:scale-125 group-hover:opacity-20`}
+                />
+                <div className="relative flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-500">{card.label}</p>
+                    <p
+                      title={card.value}
+                      className="mt-2 break-words text-[clamp(1.05rem,1.4vw,1.5rem)] font-extrabold leading-tight tracking-tight text-slate-900"
+                    >
+                      {card.value}
+                    </p>
+                  </div>
                   <div
-                    className={`absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br ${card.gradient} opacity-10 transition group-hover:opacity-20`}
-                  />
-                  <div className="relative flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-500">{card.label}</p>
-                      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                        {card.value}
-                      </p>
-                    </div>
-                    <div className={`rounded-2xl p-3 ${card.bg}`}>
-                      <Icon className={`h-5 w-5 ${card.iconColor}`} />
-                    </div>
+                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${card.gradient} text-white shadow-lg ${card.glow} transition duration-300 group-hover:scale-110 group-hover:-rotate-6`}
+                  >
+                    <Icon className="h-5 w-5" />
                   </div>
                 </div>
-              );
-            })}
-          </div>
-
-          {stats && stats.order_count > 0 && (
-            <div className="card mt-6 flex items-center gap-4 border-emerald-200/60 bg-gradient-to-r from-emerald-50/80 to-white">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100">
-                <Sparkles className="h-6 w-6 text-emerald-600" />
+                <div
+                  className={`mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100`}
+                >
+                  <div
+                    className={`h-full w-2/3 rounded-full bg-gradient-to-r ${card.gradient} transition-all duration-500 group-hover:w-full`}
+                  />
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-slate-500">Average Sale Value</p>
-                <p className="text-xl font-bold text-slate-900">
-                  {formatCurrency(stats.total_sales / stats.order_count)}
-                </p>
-              </div>
-            </div>
-          )}
-        </>
+            );
+          })}
+        </div>
       )}
     </div>
   );
