@@ -15,6 +15,7 @@ interface ProductForm {
   name: string;
   category_id: string;
   price: string;
+  discount_percent: string;
   cost: string;
   stock: string;
   is_active: boolean;
@@ -24,6 +25,7 @@ const emptyForm: ProductForm = {
   name: "",
   category_id: "",
   price: "",
+  discount_percent: "0",
   cost: "",
   stock: "0",
   is_active: true,
@@ -69,8 +71,8 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    apiGet<Category[]>("/categories")
-      .then((cats) => setCategories(cats.filter((c) => c.is_active)))
+    apiGet<Category[]>("/categories", { active_only: 1 })
+      .then((cats) => setCategories(cats))
       .catch(() => setCategories([]));
   }, []);
 
@@ -110,6 +112,7 @@ export default function ProductsPage() {
       name: product.name,
       category_id: product.category_id?.toString() ?? "",
       price: product.price,
+      discount_percent: product.discount_percent?.toString() ?? "0",
       cost: product.cost ?? "",
       stock: product.stock.toString(),
       is_active: product.is_active,
@@ -157,6 +160,7 @@ export default function ProductsPage() {
     body.append("name", form.name);
     if (form.category_id) body.append("category_id", form.category_id);
     body.append("price", form.price);
+    body.append("discount_percent", form.discount_percent || "0");
     if (form.cost) body.append("cost", form.cost);
     body.append("stock", form.stock || "0");
     body.append("is_active", form.is_active ? "1" : "0");
@@ -224,6 +228,7 @@ export default function ProductsPage() {
               <th>SKU</th>
               <th>Barcode</th>
               <th>Price</th>
+              <th>Discount</th>
               <th>Cost</th>
               <th>Stock</th>
               <th>Status</th>
@@ -233,13 +238,13 @@ export default function ProductsPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={canManage ? 9 : 8} className="py-8 text-center text-gray-500">
+                <td colSpan={canManage ? 10 : 9} className="py-8 text-center text-gray-500">
                   Loading...
                 </td>
               </tr>
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan={canManage ? 9 : 8} className="py-8 text-center text-gray-500">
+                <td colSpan={canManage ? 10 : 9} className="py-8 text-center text-gray-500">
                   No products found
                 </td>
               </tr>
@@ -262,6 +267,15 @@ export default function ProductsPage() {
                   <td className="text-gray-500">{p.sku ?? "—"}</td>
                   <td className="font-mono text-gray-500">{p.barcode ?? "—"}</td>
                   <td title={formatCurrency(p.price)}>{formatCurrency(p.price)}</td>
+                  <td>
+                    {parseFloat(p.discount_percent || "0") > 0 ? (
+                      <span className="font-semibold text-emerald-700">
+                        {parseFloat(p.discount_percent).toFixed(2)}%
+                      </span>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </td>
                   <td title={p.cost != null && p.cost !== "" ? formatCurrency(p.cost) : ""}>
                     {p.cost != null && p.cost !== "" ? formatCurrency(p.cost) : "—"}
                   </td>
@@ -375,7 +389,7 @@ export default function ProductsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium">Category</label>
                   <SearchableSelect
@@ -402,7 +416,20 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium">Discount %</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    className="input-field"
+                    value={form.discount_percent}
+                    onChange={(e) => setForm({ ...form, discount_percent: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium">Cost</label>
                   <input
@@ -414,16 +441,17 @@ export default function ProductsPage() {
                     onChange={(e) => setForm({ ...form, cost: e.target.value })}
                   />
                 </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium">Stock</label>
-                  <input
-                    type="number"
-                    min="0"
-                    className="input-field"
-                    value={form.stock}
-                    onChange={(e) => setForm({ ...form, stock: e.target.value })}
-                  />
-                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium">Stock</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="input-field"
+                  value={form.stock}
+                  onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                />
               </div>
 
               <label className="flex items-center gap-2 text-sm">

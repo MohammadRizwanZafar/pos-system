@@ -89,7 +89,7 @@ export default function SaleDetailPage() {
           )}
         </div>
 
-        <div className="mb-6 grid grid-cols-2 gap-4 text-sm">
+        <div className="mb-6 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           <div className="rounded-xl bg-slate-50 p-3">
             <p className="text-xs font-bold uppercase tracking-wide text-slate-400">
               Invoice No

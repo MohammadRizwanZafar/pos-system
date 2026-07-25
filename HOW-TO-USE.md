@@ -1,8 +1,54 @@
 # ShopPOS — How to Use
 
-## Install
+## Install / How to run
 
-**Docker**
+### Windows (Laragon) — recommended
+
+Pehle Laragon → **Start All** (MySQL ON), phir  
+Laragon → Menu → Tools → Path → **Add Laragon to Path** (terminal dubara kholo).
+
+**CMD — first time:**
+
+```bat
+git clone https://github.com/MohammadRizwanZafar/pos-system.git
+cd pos-system
+pos setup
+pos start
+```
+
+**CMD — every day:**
+
+```bat
+cd pos-system
+pos start
+```
+
+**CMD — stop:**
+
+```bat
+pos stop
+```
+
+**PowerShell** (same, with `.\`):
+
+```powershell
+git clone https://github.com/MohammadRizwanZafar/pos-system.git
+cd pos-system
+.\pos setup
+.\pos start
+```
+
+Double-click bhi chalega: `SETUP.bat` / `START.bat` / `STOP.bat`.
+
+| Service | URL / Port |
+|---------|------------|
+| Frontend (POS) | http://localhost:9050 |
+| Backend API | http://localhost:9051 |
+| API base | http://localhost:9051/api/v1 |
+
+---
+
+### Docker
 
 ```bash
 git clone https://github.com/MohammadRizwanZafar/pos-system.git
@@ -11,14 +57,7 @@ cp .env.example .env
 docker compose up --build -d
 ```
 
-**Windows (Laragon)**
-
-1. Start Laragon (MySQL on)
-2. Clone the project
-3. Run `scripts\setup-native.bat`
-4. Daily: `start-pos.bat` / `stop-pos.bat`
-
-Open the POS app in the browser when ready.
+Then open http://localhost:9050
 
 ---
 

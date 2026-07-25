@@ -22,7 +22,8 @@ class ProductController extends Controller
         $products = $this->productService->listProducts(
             $request->search,
             $request->integer('category_id') ?: null,
-            $request->has('per_page') ? $request->integer('per_page') : null
+            $request->has('per_page') ? $request->integer('per_page') : null,
+            $request->boolean('active_only')
         );
 
         return $this->success($products);

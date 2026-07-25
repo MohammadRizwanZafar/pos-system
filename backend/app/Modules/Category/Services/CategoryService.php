@@ -7,12 +7,42 @@ use Illuminate\Support\Str;
 
 class CategoryService
 {
-    public function listCategories(bool $activeOnly = false)
-    {
-        return Category::query()
+    public function listCategories(
+        ?string $search = null,
+        ?int $perPage = null,
+        bool $activeOnly = false
+    ) {
+        $search = $search !== null ? trim($search) : null;
+        if ($search === '') {
+            $search = null;
+        }
+
+        $query = Category::query()
             ->when($activeOnly, fn ($q) => $q->where('is_active', true))
-            ->orderBy('name')
-            ->get();
+            ->when($search, function ($q) use ($search) {
+                $like = "%{$search}%";
+                $q->where(function ($searchQuery) use ($like) {
+                    $searchQuery->where('name', 'like', $like)
+                        ->orWhere('slug', 'like', $like);
+                });
+            })
+            ->orderBy('name');
+
+        if (! $perPage) {
+            return $query->get();
+        }
+
+        $paginator = $query->paginate(min(max($perPage, 1), 100));
+
+        return [
+            'items' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ];
     }
 
     public function createCategory(array $data): Category

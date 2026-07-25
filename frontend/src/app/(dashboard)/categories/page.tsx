@@ -3,11 +3,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { Pagination, SearchInput, usePagedList } from "@/components/ui/TableControls";
+import { Pagination, SearchInput } from "@/components/ui/TableControls";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import { isAdmin } from "@/lib/auth";
 import { getApiErrorMessage } from "@/lib/utils";
-import type { Category } from "@/types";
+import type { Category, PaginatedData } from "@/types";
 
 interface CategoryForm {
   name: string;
@@ -29,28 +29,35 @@ export default function CategoriesPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-
-  const { paged, page, setPage, totalPages, total, perPage } = usePagedList(
-    categories,
-    search,
-    (c, q) => c.name.toLowerCase().includes(q) || (c.slug ?? "").toLowerCase().includes(q)
-  );
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const perPage = 10;
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const cats = await apiGet<Category[]>("/categories");
-      setCategories(cats);
+      const data = await apiGet<PaginatedData<Category>>("/categories", {
+        page,
+        per_page: perPage,
+        search: search.trim() || undefined,
+      });
+      setCategories(data.items);
+      setTotalPages(data.meta.last_page);
+      setTotal(data.meta.total);
     } catch {
       setCategories([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const timer = setTimeout(loadData, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search]);
 
   const openCreate = () => {
     setEditing(null);
@@ -120,7 +127,10 @@ export default function CategoriesPage() {
 
       <SearchInput
         value={search}
-        onChange={setSearch}
+        onChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
         placeholder="Search categories..."
         className="mb-4 max-w-md"
       />
@@ -142,14 +152,14 @@ export default function CategoriesPage() {
                   Loading...
                 </td>
               </tr>
-            ) : paged.length === 0 ? (
+            ) : categories.length === 0 ? (
               <tr>
                 <td colSpan={canManage ? 4 : 3} className="py-8 text-center text-gray-500">
                   No categories found
                 </td>
               </tr>
             ) : (
-              paged.map((c) => (
+              categories.map((c) => (
                 <tr key={c.id}>
                   <td className="font-medium">{c.name}</td>
                   <td className="text-gray-500">{c.slug}</td>

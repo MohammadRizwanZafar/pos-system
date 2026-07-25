@@ -10,10 +10,18 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { Pagination, SearchInput, usePagedList } from "@/components/ui/TableControls";
+import { Pagination, SearchInput } from "@/components/ui/TableControls";
 import { apiGet, apiPost } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/utils";
-import type { Shop, User } from "@/types";
+import type { PaginatedData, Shop, User } from "@/types";
+
+interface ShopListResponse extends PaginatedData<Shop> {
+  summary?: {
+    total_shops: number;
+    active_shops: number;
+    total_cashiers: number;
+  };
+}
 
 interface ShopForm {
   name: string;
@@ -64,23 +72,33 @@ export default function PlatformShopsPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-
-  const { paged, page, setPage, totalPages, total, perPage } = usePagedList(
-    shops,
-    search,
-    (s, q) =>
-      s.name.toLowerCase().includes(q) ||
-      (s.owner?.email ?? "").toLowerCase().includes(q) ||
-      (s.owner?.name ?? "").toLowerCase().includes(q)
-  );
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [summary, setSummary] = useState({
+    total_shops: 0,
+    active_shops: 0,
+    total_cashiers: 0,
+  });
+  const perPage = 10;
 
   const loadShops = async () => {
     setLoading(true);
     try {
-      const data = await apiGet<Shop[]>("/platform/shops");
-      setShops(Array.isArray(data) ? data : []);
+      const data = await apiGet<ShopListResponse>("/platform/shops", {
+        page,
+        per_page: perPage,
+        search: search.trim() || undefined,
+      });
+      setShops(data.items ?? []);
+      setTotalPages(data.meta?.last_page ?? 1);
+      setTotal(data.meta?.total ?? 0);
+      if (data.summary) {
+        setSummary(data.summary);
+      }
     } catch {
       setShops([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -96,8 +114,10 @@ export default function PlatformShopsPage() {
   };
 
   useEffect(() => {
-    loadShops();
-  }, []);
+    const timer = setTimeout(loadShops, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search]);
 
   const toggleExpand = async (shopId: number) => {
     if (expandedId === shopId) {
@@ -169,25 +189,24 @@ export default function PlatformShopsPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-slate-500">Total Shops</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{shops.length}</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{summary.total_shops}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-slate-500">Active Shops</p>
-          <p className="mt-2 text-3xl font-bold text-emerald-600">
-            {shops.filter((s) => s.is_active).length}
-          </p>
+          <p className="mt-2 text-3xl font-bold text-emerald-600">{summary.active_shops}</p>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-slate-500">Total Cashiers</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">
-            {shops.reduce((sum, s) => sum + (s.cashiers_count ?? 0), 0)}
-          </p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{summary.total_cashiers}</p>
         </div>
       </div>
 
       <SearchInput
         value={search}
-        onChange={setSearch}
+        onChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
         placeholder="Search by shop name or owner..."
         className="max-w-md"
       />
@@ -197,7 +216,7 @@ export default function PlatformShopsPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-slate-500">
             Loading shops...
           </div>
-        ) : paged.length === 0 ? (
+        ) : shops.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
             <Store className="mx-auto h-12 w-12 text-slate-300" />
             <p className="mt-4 font-semibold text-slate-700">No shops yet</p>
@@ -206,7 +225,7 @@ export default function PlatformShopsPage() {
             </p>
           </div>
         ) : (
-          paged.map((shop) => {
+          shops.map((shop) => {
             const expanded = expandedId === shop.id;
             const detail = shopDetails[shop.id];
             const staff = detail?.users ?? [];
@@ -387,7 +406,7 @@ export default function PlatformShopsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium">Address</label>
                   <input
@@ -425,7 +444,7 @@ export default function PlatformShopsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium">Owner Email *</label>
                   <input

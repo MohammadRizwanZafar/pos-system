@@ -40,24 +40,29 @@ export default function OpeningCashPage() {
   const [todayRecord, setTodayRecord] = useState<OpeningCash | null>(null);
   const perPage = 10;
 
+  const loadToday = async () => {
+    try {
+      const today = await apiGet<OpeningCash | null>("/opening-cashes/today");
+      setTodayRecord(today);
+    } catch {
+      setTodayRecord(null);
+    }
+  };
+
   const loadRecords = async () => {
     setLoading(true);
     try {
       const { from_date, to_date } = getDateRange(period, customFrom, customTo);
-      const [data, today] = await Promise.all([
-        apiGet<PaginatedData<OpeningCash>>("/opening-cashes", {
-          page,
-          per_page: perPage,
-          search: search.trim() || undefined,
-          from_date,
-          to_date,
-        }),
-        apiGet<OpeningCash | null>("/opening-cashes/today").catch(() => null),
-      ]);
+      const data = await apiGet<PaginatedData<OpeningCash>>("/opening-cashes", {
+        page,
+        per_page: perPage,
+        search: search.trim() || undefined,
+        from_date,
+        to_date,
+      });
       setRecords(data.items);
       setTotalPages(data.meta.last_page);
       setTotal(data.meta.total);
-      setTodayRecord(today);
     } catch {
       setRecords([]);
       setTotal(0);
@@ -65,6 +70,10 @@ export default function OpeningCashPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadToday();
+  }, []);
 
   useEffect(() => {
     if (period === "custom" && (!customFrom || !customTo)) return;
@@ -98,7 +107,7 @@ export default function OpeningCashPage() {
       setForm(emptyForm());
       setShowForm(false);
       setPage(1);
-      await loadRecords();
+      await Promise.all([loadRecords(), loadToday()]);
     } catch (err) {
       setError(getApiErrorMessage(err) || "Failed to save opening cash");
     } finally {
@@ -120,7 +129,7 @@ export default function OpeningCashPage() {
       });
       setModalOpen(false);
       setEditing(null);
-      await loadRecords();
+      await Promise.all([loadRecords(), loadToday()]);
     } catch (err) {
       setError(getApiErrorMessage(err) || "Failed to update opening cash");
     } finally {
@@ -132,7 +141,7 @@ export default function OpeningCashPage() {
     if (!confirm("Delete this opening cash record?")) return;
     try {
       await apiDelete(`/opening-cashes/${id}`);
-      await loadRecords();
+      await Promise.all([loadRecords(), loadToday()]);
     } catch (err) {
       alert(getApiErrorMessage(err) || "Failed to delete");
     }

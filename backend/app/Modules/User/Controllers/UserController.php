@@ -9,6 +9,7 @@ use App\Modules\User\Requests\UpdateUserRequest;
 use App\Modules\User\Services\UserService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
@@ -16,9 +17,12 @@ class UserController extends Controller
 
     public function __construct(private UserService $userService) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return $this->success($this->userService->listUsers());
+        return $this->success($this->userService->listUsers(
+            $request->search,
+            $request->has('per_page') ? $request->integer('per_page') : null
+        ));
     }
 
     public function store(StoreUserRequest $request): JsonResponse

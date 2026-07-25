@@ -7,9 +7,40 @@ use Illuminate\Support\Facades\Hash;
 
 class UserService
 {
-    public function listUsers()
+    public function listUsers(?string $search = null, ?int $perPage = null)
     {
-        return User::with('roles')->orderBy('name')->get();
+        $search = $search !== null ? trim($search) : null;
+        if ($search === '') {
+            $search = null;
+        }
+
+        $query = User::query()
+            ->with('roles:id,name')
+            ->select(['id', 'shop_id', 'name', 'email', 'is_active', 'created_at'])
+            ->when($search, function ($q) use ($search) {
+                $like = "%{$search}%";
+                $q->where(function ($searchQuery) use ($like) {
+                    $searchQuery->where('name', 'like', $like)
+                        ->orWhere('email', 'like', $like);
+                });
+            })
+            ->orderBy('name');
+
+        if (! $perPage) {
+            return $query->get();
+        }
+
+        $paginator = $query->paginate(min(max($perPage, 1), 100));
+
+        return [
+            'items' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+        ];
     }
 
     public function createUser(array $data): User

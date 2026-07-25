@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -15,6 +16,7 @@ import {
   Settings,
   LogOut,
   Store,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -50,9 +52,21 @@ const navItems: NavItem[] = [
 interface SidebarProps {
   user: User | null;
   onLogout: () => void;
+  open?: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ user, onLogout }: SidebarProps) {
+function SidebarBody({
+  user,
+  onLogout,
+  onClose,
+  compact,
+}: {
+  user: User | null;
+  onLogout: () => void;
+  onClose?: () => void;
+  compact?: boolean;
+}) {
   const pathname = usePathname();
   const admin = isAdmin(user);
   const cashier = isCashier(user);
@@ -71,25 +85,49 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
   });
 
   return (
-    <aside className="flex w-[17.5rem] shrink-0 flex-col bg-sidebar text-slate-300 shadow-xl">
-      <div className="border-b border-sidebar-border px-6 py-6">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-emerald-500/25">
+    <>
+      <div
+        className={cn(
+          "flex items-center justify-between border-b border-sidebar-border",
+          compact ? "px-2 py-4" : "px-4 py-4 sm:px-5"
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-lg shadow-emerald-500/25">
             <Store className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-base font-bold tracking-tight text-white">ShopPOS</p>
-            <p className="truncate text-xs font-medium text-emerald-400/90">
-              {user?.name ?? "User"}
-            </p>
-          </div>
+          {!compact && (
+            <div className="min-w-0">
+              <p className="text-base font-bold tracking-tight text-white">ShopPOS</p>
+              <p className="truncate text-xs font-medium text-emerald-400/90">
+                {user?.name ?? "User"}
+              </p>
+            </div>
+          )}
         </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-slate-400 hover:bg-sidebar-hover hover:text-white"
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-5">
-        <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-          Menu
-        </p>
+      <nav
+        className={cn(
+          "flex-1 space-y-1 overflow-y-auto py-4",
+          compact ? "px-1.5" : "px-2 sm:px-3"
+        )}
+      >
+        {!compact && (
+          <p className="mb-2 px-2 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+            Menu
+          </p>
+        )}
         {visibleItems.map((item) => {
           const Icon = item.icon;
           const active =
@@ -99,8 +137,10 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              title={item.label}
               className={cn(
-                "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition",
+                "group flex items-center rounded-xl py-2 text-sm font-semibold transition",
+                compact ? "justify-center px-2" : "gap-3 px-2.5 sm:px-3",
                 active
                   ? "bg-gradient-to-r from-primary-600/90 to-primary-500/80 text-white shadow-md"
                   : "text-slate-400 hover:bg-sidebar-hover hover:text-white",
@@ -122,37 +162,105 @@ export default function Sidebar({ user, onLogout }: SidebarProps) {
                   )}
                 />
               </span>
-              {item.label}
-              {item.highlight && !active && (
-                <span className="ml-auto rounded-md bg-primary-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
-                  Sell
-                </span>
+              {!compact && (
+                <>
+                  <span className="truncate">{item.label}</span>
+                  {item.highlight && !active && (
+                    <span className="ml-auto rounded-md bg-primary-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-400">
+                      Sell
+                    </span>
+                  )}
+                </>
               )}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-sidebar-border p-4">
-        <div className="mb-3 rounded-xl bg-sidebar-hover px-3 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-slate-600 to-slate-700 text-sm font-bold text-white">
+      <div className={cn("border-t border-sidebar-border", compact ? "p-2" : "p-3 sm:p-4")}>
+        <div className={cn("mb-3 rounded-xl bg-sidebar-hover", compact ? "p-2" : "px-3 py-3")}>
+          <div className={cn("flex items-center gap-3", compact && "justify-center")}>
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-slate-600 to-slate-700 text-sm font-bold text-white">
               {user?.name?.charAt(0).toUpperCase() ?? "?"}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-white">{user?.name}</p>
-              <p className="truncate text-xs text-slate-500">{user?.email}</p>
-            </div>
+            {!compact && (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">{user?.name}</p>
+                <p className="truncate text-xs text-slate-500">{user?.email}</p>
+              </div>
+            )}
           </div>
         </div>
         <button
           onClick={onLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-400 transition hover:bg-red-500/10 hover:text-red-400"
+          title="Logout"
+          className={cn(
+            "flex w-full items-center rounded-xl py-2.5 text-sm font-semibold text-slate-400 transition hover:bg-red-500/10 hover:text-red-400",
+            compact ? "justify-center px-2" : "gap-3 px-3"
+          )}
         >
-          <LogOut className="h-5 w-5" />
-          Logout
+          <LogOut className="h-5 w-5 shrink-0" />
+          {!compact && <span>Logout</span>}
         </button>
       </div>
-    </aside>
+    </>
+  );
+}
+
+export default function Sidebar({ user, onLogout, open = false, onClose }: SidebarProps) {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    onClose?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  return (
+    <>
+      {/* Compact icon rail for medium laptops */}
+      <aside className="hidden w-[4.75rem] shrink-0 flex-col bg-sidebar text-slate-300 shadow-xl lg:flex xl:hidden">
+        <SidebarBody user={user} onLogout={onLogout} compact />
+      </aside>
+
+      {/* Full sidebar for large screens */}
+      <aside className="hidden w-60 shrink-0 flex-col bg-sidebar text-slate-300 shadow-xl xl:flex 2xl:w-[17rem]">
+        <SidebarBody user={user} onLogout={onLogout} />
+      </aside>
+
+      {/* Drawer for phones / small laptops */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 lg:hidden",
+          open ? "pointer-events-auto" : "pointer-events-none"
+        )}
+      >
+        <button
+          type="button"
+          aria-label="Close menu overlay"
+          onClick={onClose}
+          className={cn(
+            "absolute inset-0 bg-slate-900/50 transition-opacity",
+            open ? "opacity-100" : "opacity-0"
+          )}
+        />
+        <aside
+          className={cn(
+            "absolute inset-y-0 left-0 flex w-[min(18rem,86vw)] flex-col bg-sidebar text-slate-300 shadow-2xl transition-transform duration-200",
+            open ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          <SidebarBody user={user} onLogout={onLogout} onClose={onClose} />
+        </aside>
+      </div>
+    </>
   );
 }

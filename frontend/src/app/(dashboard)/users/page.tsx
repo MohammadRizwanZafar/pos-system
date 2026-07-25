@@ -3,10 +3,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Plus, X } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { Pagination, SearchInput, usePagedList } from "@/components/ui/TableControls";
+import { Pagination, SearchInput } from "@/components/ui/TableControls";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
 import { getApiErrorMessage } from "@/lib/utils";
-import type { User } from "@/types";
+import type { PaginatedData, User } from "@/types";
 
 function roleLabel(role?: string): string {
   if (role === "admin") return "Owner";
@@ -39,28 +39,35 @@ export default function UsersPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-
-  const { paged, page, setPage, totalPages, total, perPage } = usePagedList(
-    users,
-    search,
-    (u, q) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
-  );
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const perPage = 10;
 
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const data = await apiGet<User[]>("/users");
-      setUsers(data);
+      const data = await apiGet<PaginatedData<User>>("/users", {
+        page,
+        per_page: perPage,
+        search: search.trim() || undefined,
+      });
+      setUsers(data.items);
+      setTotalPages(data.meta.last_page);
+      setTotal(data.meta.total);
     } catch {
       setUsers([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadUsers();
-  }, []);
+    const timer = setTimeout(loadUsers, 300);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search]);
 
   const openCreate = () => {
     setEditing(null);
@@ -128,7 +135,10 @@ export default function UsersPage() {
 
       <SearchInput
         value={search}
-        onChange={setSearch}
+        onChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
         placeholder="Search by name or email..."
         className="mb-4 max-w-md"
       />
@@ -151,14 +161,14 @@ export default function UsersPage() {
                   Loading...
                 </td>
               </tr>
-            ) : paged.length === 0 ? (
+            ) : users.length === 0 ? (
               <tr>
                 <td colSpan={5} className="py-8 text-center text-gray-500">
                   No users found
                 </td>
               </tr>
             ) : (
-              paged.map((user) => (
+              users.map((user) => (
                 <tr key={user.id}>
                   <td className="font-medium">{user.name}</td>
                   <td className="text-gray-500">{user.email}</td>

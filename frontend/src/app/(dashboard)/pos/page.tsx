@@ -19,7 +19,7 @@ import PageLoader from "@/components/ui/PageLoader";
 import ProductAvatar from "@/components/ui/ProductAvatar";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { Pagination } from "@/components/ui/TableControls";
-import { cn, formatCurrency, getApiErrorMessage } from "@/lib/utils";
+import { cn, formatCurrency, getApiErrorMessage, getProductSellPrice } from "@/lib/utils";
 import type { Category, PaginatedData, Product, Sale, StoreSettings } from "@/types";
 
 const EXPENSE_CATEGORIES = ["Supplies", "Utilities", "Rent", "Transport", "Other"];
@@ -35,6 +35,7 @@ export default function POSPage() {
   const [productTotal, setProductTotal] = useState(0);
   const [cashAmount, setCashAmount] = useState("");
   const [note, setNote] = useState("");
+  const [taxPercent, setTaxPercent] = useState(0);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
@@ -63,11 +64,14 @@ export default function POSPage() {
     const load = async () => {
       try {
         const [cats, storeSettings] = await Promise.all([
-          apiGet<Category[]>("/categories"),
+          apiGet<Category[]>("/categories", { active_only: 1 }),
           apiGet<StoreSettings>("/settings").catch(() => null),
         ]);
-        setCategories(cats.filter((c) => c.is_active));
+        setCategories(cats);
         setSettings(storeSettings);
+        if (storeSettings) {
+          setTaxPercent(parseFloat(storeSettings.tax_percent) || 0);
+        }
       } catch {
         setCategories([]);
       }
@@ -83,6 +87,7 @@ export default function POSPage() {
         const params: Record<string, unknown> = {
           page: productPage,
           per_page: 20,
+          active_only: 1,
         };
         const q = search.trim();
         if (q) params.search = q;
@@ -104,8 +109,8 @@ export default function POSPage() {
     };
   }, [search, categoryId, productPage]);
 
-  const taxPercent = settings ? parseFloat(settings.tax_percent) : 0;
   const currencySymbol = settings?.currency_symbol ?? "Rs.";
+  const defaultTaxPercent = settings ? parseFloat(settings.tax_percent) || 0 : 0;
   const subtotal = getSubtotal();
   const tax = (subtotal - discount) * (taxPercent / 100);
   const total = Math.max(0, subtotal - discount + tax);
@@ -133,6 +138,7 @@ export default function POSPage() {
           quantity: i.quantity,
         })),
         discount,
+        tax_percent: taxPercent,
         amount_paid: paid,
         note: note || undefined,
       });
@@ -140,6 +146,7 @@ export default function POSPage() {
       clearCart();
       setCashAmount("");
       setNote("");
+      setTaxPercent(defaultTaxPercent);
       setSuccess(`Sale completed! Invoice: ${sale.invoice_no}`);
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -172,13 +179,13 @@ export default function POSPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] flex-col lg:h-[calc(100vh-4rem)]">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 sm:mb-3 sm:gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl xl:text-2xl">
             Point of Sale
           </h1>
-          <p className="text-sm font-medium text-slate-500">
+          <p className="truncate text-xs font-medium text-slate-500 sm:text-sm">
             {settings?.store_name ?? "Tap products to add to cart"}
           </p>
         </div>
@@ -189,10 +196,11 @@ export default function POSPage() {
               setExpenseOpen(true);
               setError("");
             }}
-            className="flex items-center gap-2 rounded-xl border border-amber-200/80 bg-amber-50 px-3.5 py-2 text-sm font-semibold text-amber-800 transition hover:bg-amber-100"
+            className="flex items-center gap-1.5 rounded-xl border border-amber-200/80 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 sm:gap-2 sm:px-3.5 sm:py-2 sm:text-sm"
           >
             <Wallet className="h-4 w-4" />
-            Quick Expense
+            <span className="sm:hidden">Expense</span>
+            <span className="hidden sm:inline">Quick Expense</span>
           </button>
           <div className="hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 ring-1 ring-emerald-200/70 sm:flex">
             <span className="relative flex h-2 w-2">
@@ -227,16 +235,16 @@ export default function POSPage() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden lg:flex-row lg:gap-3 xl:gap-4">
         {/* Products */}
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
-          <div className="space-y-3 border-b border-slate-100 p-4">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
+          <div className="space-y-2 border-b border-slate-100 p-2.5 sm:space-y-3 sm:p-4">
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search by name, SKU or barcode..."
-                className="input-field py-3 pl-10 pr-11 text-[15px]"
+                className="input-field py-2.5 pl-10 pr-11 text-sm sm:py-3 sm:text-[15px]"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -283,7 +291,7 @@ export default function POSPage() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="min-h-0 flex-1 overflow-y-auto p-2 sm:p-3 xl:p-4">
             {loading ? (
               <PageLoader label="Loading products..." />
             ) : products.length === 0 ? (
@@ -293,7 +301,7 @@ export default function POSPage() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
                   {products.map((product) => (
                   <button
                     key={product.id}
@@ -315,12 +323,24 @@ export default function POSPage() {
                       >
                         {product.name}
                       </p>
-                      <p
-                        className="mt-auto pt-2 text-left text-lg font-extrabold text-primary-600"
-                        title={formatCurrency(product.price, currencySymbol)}
-                      >
-                        {formatCurrency(product.price, currencySymbol)}
-                      </p>
+                      <div className="mt-auto pt-2 text-left">
+                        {parseFloat(product.discount_percent || "0") > 0 ? (
+                          <p className="text-xs font-semibold text-slate-400 line-through">
+                            {formatCurrency(product.price, currencySymbol)}
+                          </p>
+                        ) : null}
+                        <p
+                          className="text-lg font-extrabold text-primary-600"
+                          title={formatCurrency(getProductSellPrice(product), currencySymbol)}
+                        >
+                          {formatCurrency(getProductSellPrice(product), currencySymbol)}
+                        </p>
+                        {parseFloat(product.discount_percent || "0") > 0 && (
+                          <p className="text-[11px] font-bold text-emerald-600">
+                            -{parseFloat(product.discount_percent).toFixed(0)}%
+                          </p>
+                        )}
+                      </div>
                       <p
                         className={cn(
                           "mt-0.5 text-left text-xs font-semibold",
@@ -354,10 +374,10 @@ export default function POSPage() {
         </div>
 
         {/* Cart */}
-        <div className="pos-cart-panel w-full shrink-0 lg:w-[23rem] xl:w-[26rem]">
-          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">Current Order</h2>
+        <div className="pos-cart-panel h-[min(48vh,26rem)] w-full shrink-0 lg:h-full lg:w-[19rem] xl:w-[21rem] 2xl:w-[24rem]">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-3 py-2.5 sm:px-4 sm:py-3.5">
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-slate-900 sm:text-base">Current Order</h2>
               <p className="text-xs font-medium text-slate-500">
                 {items.length} item{items.length !== 1 ? "s" : ""}
               </p>
@@ -366,14 +386,14 @@ export default function POSPage() {
               type="button"
               onClick={clearCart}
               disabled={items.length === 0}
-              className="rounded-xl p-2.5 text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-xl p-2 text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
               title="Clear cart"
             >
               <Trash2 className="h-[18px] w-[18px]" />
             </button>
           </div>
 
-          <div className="min-h-[120px] flex-1 overflow-y-auto px-4 py-3">
+          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2 sm:px-4 sm:py-3">
             {items.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center py-10 text-center">
                 <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
@@ -385,7 +405,8 @@ export default function POSPage() {
             ) : (
               <div className="space-y-2.5">
                 {items.map((item) => {
-                  const lineTotal = parseFloat(item.product.price) * item.quantity;
+                  const unitPrice = getProductSellPrice(item.product);
+                  const lineTotal = unitPrice * item.quantity;
                   return (
                     <div
                       key={item.product.id}
@@ -403,9 +424,14 @@ export default function POSPage() {
                         </p>
                         <p
                           className="text-xs font-medium text-slate-500"
-                          title={formatCurrency(item.product.price, currencySymbol)}
+                          title={formatCurrency(unitPrice, currencySymbol)}
                         >
-                          {formatCurrency(item.product.price, currencySymbol)}
+                          {formatCurrency(unitPrice, currencySymbol)}
+                          {parseFloat(item.product.discount_percent || "0") > 0 && (
+                            <span className="ml-1 text-emerald-600">
+                              (-{parseFloat(item.product.discount_percent).toFixed(0)}%)
+                            </span>
+                          )}
                         </p>
                         <div className="mt-2 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-0.5 rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-slate-200">
@@ -455,36 +481,63 @@ export default function POSPage() {
             )}
           </div>
 
-          <div className="space-y-3 border-t border-slate-100 bg-slate-50/40 p-4">
-            <div className="space-y-2.5 text-sm">
-              <div className="flex justify-between font-medium text-slate-600">
-                <span>Subtotal</span>
-                <span className="font-semibold text-slate-800" title={formatCurrency(subtotal, currencySymbol)}>
+          <div className="shrink-0 space-y-1.5 border-t border-slate-100 bg-slate-50/40 p-2.5 sm:space-y-2.5 sm:p-3.5">
+            <div className="space-y-1 text-sm sm:space-y-2">
+              <div className="flex items-center justify-between gap-2 font-medium text-slate-600">
+                <span className="shrink-0">Subtotal</span>
+                <span
+                  className="min-w-0 break-all text-right font-semibold text-slate-800"
+                  title={formatCurrency(subtotal, currencySymbol)}
+                >
                   {formatCurrency(subtotal, currencySymbol)}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2">
-                <span className="font-medium text-slate-600">Discount</span>
+                <span className="shrink-0 font-medium text-slate-600">Discount</span>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  className="input-field w-28 bg-white py-2 text-right text-sm font-semibold"
+                  className="input-field w-24 bg-white py-1.5 text-right text-sm font-semibold sm:w-28 sm:py-2"
                   value={discount || ""}
                   onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
                   placeholder="0.00"
                 />
               </div>
-              <div className="flex justify-between font-medium text-slate-600">
-                <span>Tax ({taxPercent}%)</span>
-                <span className="font-semibold text-slate-800" title={formatCurrency(tax, currencySymbol)}>
-                  {formatCurrency(tax, currencySymbol)}
-                </span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 shrink-0">
+                  <span className="font-medium text-slate-600">Tax %</span>
+                  {tax > 0 && (
+                    <p
+                      className="text-[11px] font-semibold text-slate-400"
+                      title={formatCurrency(tax, currencySymbol)}
+                    >
+                      {formatCurrency(tax, currencySymbol)}
+                    </p>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  className="input-field w-24 bg-white py-1.5 text-right text-sm font-semibold sm:w-28 sm:py-2"
+                  value={taxPercent || ""}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (Number.isNaN(value)) {
+                      setTaxPercent(0);
+                      return;
+                    }
+                    setTaxPercent(Math.min(100, Math.max(0, value)));
+                  }}
+                  placeholder="0"
+                />
               </div>
-              <div className="flex items-center justify-between rounded-xl bg-slate-900 px-4 py-3.5 shadow-lg">
-                <span className="text-sm font-semibold text-slate-300">Total Payable</span>
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-900 px-3 py-2 shadow-lg sm:px-4 sm:py-3">
+                <span className="shrink-0 text-xs font-semibold text-slate-300 sm:text-sm">Total Payable</span>
                 <span
-                  className="text-xl font-extrabold tracking-tight text-emerald-400"
+                  className="min-w-0 break-all text-right text-sm font-extrabold tracking-tight text-emerald-400 sm:text-lg"
                   title={formatCurrency(total, currencySymbol)}
                 >
                   {formatCurrency(total, currencySymbol)}
@@ -493,7 +546,7 @@ export default function POSPage() {
             </div>
 
             <div>
-              <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">
+              <label className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-500 sm:mb-1.5 sm:text-xs">
                 <Banknote className="h-3.5 w-3.5" />
                 Cash Received
               </label>
@@ -501,17 +554,17 @@ export default function POSPage() {
                 type="number"
                 min="0"
                 step="0.01"
-                className="input-field bg-white py-3 text-lg font-bold"
+                className="input-field bg-white py-1.5 text-base font-bold sm:py-2.5 sm:text-lg"
                 placeholder="0.00"
                 value={cashAmount}
                 onChange={(e) => setCashAmount(e.target.value)}
               />
             </div>
 
-            <div className="flex items-center justify-between rounded-xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3">
-              <span className="text-sm font-bold text-emerald-800">Change</span>
+            <div className="flex min-w-0 items-center justify-between gap-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-3 py-2 sm:px-4 sm:py-3">
+              <span className="shrink-0 text-sm font-bold text-emerald-800">Change</span>
               <span
-                className="text-xl font-extrabold text-emerald-700"
+                className="min-w-0 break-all text-right text-sm font-extrabold text-emerald-700 sm:text-lg"
                 title={formatCurrency(change, currencySymbol)}
               >
                 {formatCurrency(change, currencySymbol)}
@@ -520,7 +573,7 @@ export default function POSPage() {
 
             <input
               type="text"
-              className="input-field bg-white text-sm"
+              className="pos-checkout-note input-field bg-white text-sm"
               placeholder="Note (optional)"
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -530,7 +583,7 @@ export default function POSPage() {
               type="button"
               onClick={handleCompleteSale}
               disabled={processing || items.length === 0}
-              className="btn-primary w-full py-3.5 text-base shadow-lg shadow-emerald-500/25"
+              className="btn-primary w-full py-2.5 text-sm shadow-lg shadow-emerald-500/25 sm:py-3.5 sm:text-base"
             >
               {processing ? (
                 "Processing..."

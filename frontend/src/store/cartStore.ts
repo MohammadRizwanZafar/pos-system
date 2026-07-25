@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getProductSellPrice } from "@/lib/utils";
 import type { CartItem, Product } from "@/types";
 
 interface CartState {
@@ -56,7 +57,7 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   getSubtotal: () =>
     get().items.reduce(
-      (sum, i) => sum + parseFloat(i.product.price) * i.quantity,
+      (sum, i) => sum + getProductSellPrice(i.product) * i.quantity,
       0
     ),
 

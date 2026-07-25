@@ -31,17 +31,17 @@ export default function PeriodFilter({
       ))}
 
       {period === "custom" && (
-        <div className="flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 ring-1 ring-slate-200">
+        <div className="flex w-full flex-wrap items-center gap-2 rounded-xl bg-white px-3 py-1.5 ring-1 ring-slate-200 sm:w-auto">
           <input
             type="date"
-            className="input-field w-auto border-0 bg-transparent px-2 py-1.5 shadow-none focus:ring-0"
+            className="input-field min-w-0 flex-1 border-0 bg-transparent px-2 py-1.5 shadow-none focus:ring-0 sm:w-auto sm:flex-none"
             value={customFrom}
             onChange={(e) => onCustomFromChange(e.target.value)}
           />
           <span className="text-slate-400">→</span>
           <input
             type="date"
-            className="input-field w-auto border-0 bg-transparent px-2 py-1.5 shadow-none focus:ring-0"
+            className="input-field min-w-0 flex-1 border-0 bg-transparent px-2 py-1.5 shadow-none focus:ring-0 sm:w-auto sm:flex-none"
             value={customTo}
             onChange={(e) => onCustomToChange(e.target.value)}
           />

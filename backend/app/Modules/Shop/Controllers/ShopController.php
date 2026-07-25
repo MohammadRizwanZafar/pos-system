@@ -17,9 +17,12 @@ class ShopController extends Controller
 
     public function __construct(private ShopService $shopService) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return $this->success($this->shopService->listShops());
+        return $this->success($this->shopService->listShops(
+            $request->search,
+            $request->has('per_page') ? $request->integer('per_page') : null
+        ));
     }
 
     public function store(StoreShopRequest $request): JsonResponse

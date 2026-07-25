@@ -39,4 +39,7 @@ echo "==> npm install + build"
 (cd frontend && npm install && npm run build)
 
 echo ""
-echo "Setup complete. Run: bash scripts/start-pos.sh"
+echo "Setup complete."
+echo "Frontend: http://localhost:9050"
+echo "Backend:  http://localhost:9051"
+echo "Run: bash scripts/start-pos.sh"

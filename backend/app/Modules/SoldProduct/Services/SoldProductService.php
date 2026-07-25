@@ -29,11 +29,72 @@ class SoldProductService
             $search = null;
         }
 
+        $query = $this->baseQuery($start, $end, $search);
+
+        $summaryBase = $query->clone();
+        $summaryBase->getQuery()->orders = null;
+
+        $summary = DB::query()
+            ->fromSub($summaryBase->toBase(), 'sold_rows')
+            ->selectRaw('COUNT(*) as row_count')
+            ->selectRaw('COALESCE(SUM(quantity_sold), 0) as total_quantity')
+            ->selectRaw('COALESCE(SUM(total_cost), 0) as total_cost')
+            ->selectRaw('COALESCE(SUM(net_amount), 0) as total_amount')
+            ->selectRaw('COUNT(DISTINCT product_id) as product_count')
+            ->first();
+
+        $ordered = $query->clone()
+            ->orderByDesc(DB::raw('DATE(sales.created_at)'))
+            ->orderByDesc('quantity_sold')
+            ->orderBy('sale_items.product_name');
+
+        $meta = null;
+
+        if ($perPage) {
+            $perPage = min(max($perPage, 1), 100);
+            $page = max($page, 1);
+            $total = (int) ($summary->row_count ?? 0);
+            $lastPage = max(1, (int) ceil(max($total, 1) / $perPage));
+            if ($total === 0) {
+                $lastPage = 1;
+            }
+            if ($page > $lastPage) {
+                $page = $lastPage;
+            }
+
+            $rows = $ordered->forPage($page, $perPage)->get();
+            $meta = [
+                'current_page' => $page,
+                'last_page' => $lastPage,
+                'per_page' => $perPage,
+                'total' => $total,
+            ];
+        } else {
+            $rows = $ordered->get();
+        }
+
+        $items = $rows->map(fn ($row) => $this->mapRow($row))->values();
+
+        return [
+            'period' => $period,
+            'from_date' => $start->toDateString(),
+            'to_date' => $end->toDateString(),
+            'product_count' => (int) ($summary->product_count ?? 0),
+            'total_quantity' => (int) ($summary->total_quantity ?? 0),
+            'total_cost' => round((float) ($summary->total_cost ?? 0), 2),
+            'total_amount' => round((float) ($summary->total_amount ?? 0), 2),
+            'items' => $items,
+            'meta' => $meta,
+        ];
+    }
+
+    private function baseQuery(Carbon $start, Carbon $end, ?string $search)
+    {
         $returnedQuantities = SaleReturnItem::query()
             ->selectRaw('sale_item_id, SUM(quantity) as returned_qty')
             ->groupBy('sale_item_id');
 
-        $rows = Sale::query()
+        return Sale::query()
             ->active()
             ->whereBetween('sales.created_at', [$start, $end])
             ->join('sale_items', 'sale_items.sale_id', '=', 'sales.id')
@@ -60,53 +121,7 @@ class SoldProductService
                 DB::raw('SUM(GREATEST(sale_items.quantity - COALESCE(returned.returned_qty, 0), 0) * sale_items.price) as net_amount'),
             ])
             ->groupBy(DB::raw('DATE(sales.created_at)'), 'sale_items.product_id', 'sale_items.product_name')
-            ->havingRaw('SUM(GREATEST(sale_items.quantity - COALESCE(returned.returned_qty, 0), 0)) > 0')
-            ->orderByDesc(DB::raw('DATE(sales.created_at)'))
-            ->orderByDesc('quantity_sold')
-            ->orderBy('sale_items.product_name')
-            ->get()
-            ->map(fn ($row) => $this->mapRow($row))
-            ->values();
-
-        $totalQuantity = (int) $rows->sum(fn ($row) => (int) $row['quantity_sold']);
-        $totalAmount = round((float) $rows->sum(fn ($row) => (float) $row['net_amount']), 2);
-        $totalCost = round((float) $rows->sum(fn ($row) => (float) $row['total_cost']), 2);
-        $productCount = $rows->pluck('product_id')->unique()->filter()->count();
-        if ($productCount === 0) {
-            $productCount = $rows->pluck('product_name')->unique()->count();
-        }
-
-        $meta = null;
-        $items = $rows;
-
-        if ($perPage) {
-            $perPage = min(max($perPage, 1), 100);
-            $page = max($page, 1);
-            $total = $rows->count();
-            $lastPage = max(1, (int) ceil($total / $perPage));
-            if ($page > $lastPage) {
-                $page = $lastPage;
-            }
-            $items = $rows->slice(($page - 1) * $perPage, $perPage)->values();
-            $meta = [
-                'current_page' => $page,
-                'last_page' => $lastPage,
-                'per_page' => $perPage,
-                'total' => $total,
-            ];
-        }
-
-        return [
-            'period' => $period,
-            'from_date' => $start->toDateString(),
-            'to_date' => $end->toDateString(),
-            'product_count' => $productCount,
-            'total_quantity' => $totalQuantity,
-            'total_cost' => $totalCost,
-            'total_amount' => $totalAmount,
-            'items' => $items,
-            'meta' => $meta,
-        ];
+            ->havingRaw('SUM(GREATEST(sale_items.quantity - COALESCE(returned.returned_qty, 0), 0)) > 0');
     }
 
     private function mapRow(object $row): array

@@ -18,6 +18,7 @@ class CreateSaleRequest extends FormRequest
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'discount' => ['nullable', 'numeric', 'min:0'],
+            'tax_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'amount_paid' => ['required', 'numeric', 'min:0'],
             'note' => ['nullable', 'string'],
         ];

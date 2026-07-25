@@ -13,10 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
-
+        // Bearer-token API only (no cookie/CSRF SPA flow). Stateful Sanctum
+        // middleware causes 419 CSRF errors on login from the Next.js app.
         $middleware->alias([
             'auth' => \App\Http\Middleware\Authenticate::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,

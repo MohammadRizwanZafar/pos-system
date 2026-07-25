@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
 import Sidebar from "@/components/layout/Sidebar";
 import PageLoader from "@/components/ui/PageLoader";
 import { apiGet } from "@/lib/api";
@@ -29,6 +30,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [user, setUserState] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -37,7 +39,19 @@ export default function DashboardLayout({
     }
 
     const cached = getUser();
-    if (cached) setUserState(cached);
+    if (cached) {
+      setUserState(cached);
+      setLoading(false);
+
+      if (isSuperAdmin(cached)) {
+        router.replace("/platform/shops");
+        return;
+      }
+
+      if (ownerOnlyRoutes.some((r) => pathname.startsWith(r)) && !isAdmin(cached)) {
+        router.replace(getHomeRoute(cached));
+      }
+    }
 
     apiGet<User>("/auth/me")
       .then((freshUser) => {
@@ -58,7 +72,20 @@ export default function DashboardLayout({
         router.replace("/login");
       })
       .finally(() => setLoading(false));
-  }, [router, pathname]);
+    // Auth refresh should not re-run on every route change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (isSuperAdmin(user)) {
+      router.replace("/platform/shops");
+      return;
+    }
+    if (ownerOnlyRoutes.some((r) => pathname.startsWith(r)) && !isAdmin(user)) {
+      router.replace(getHomeRoute(user));
+    }
+  }, [pathname, user, router]);
 
   const handleLogout = async () => {
     try {
@@ -86,18 +113,47 @@ export default function DashboardLayout({
   const isPos = pathname === "/pos" || pathname.startsWith("/pos/");
 
   return (
-    <div className="app-shell flex min-h-screen">
-      <Sidebar user={user} onLogout={handleLogout} />
-      <main className={cn("flex-1 overflow-auto", isPos ? "p-4 lg:p-5" : "p-6 lg:p-8")}>
-        <div
+    <div className="app-shell flex min-h-dvh min-h-screen">
+      <Sidebar
+        user={user}
+        onLogout={handleLogout}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200/80 bg-white/90 px-3 py-2.5 backdrop-blur lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMenuOpen(true)}
+            className="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 shadow-sm"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-slate-900">ShopPOS</p>
+            <p className="truncate text-xs text-slate-500">{user?.name}</p>
+          </div>
+        </div>
+
+        <main
           className={cn(
-            "animate-fade-in",
-            isPos ? "mx-auto h-full max-w-[1600px]" : "mx-auto max-w-7xl"
+            "min-w-0 flex-1",
+            isPos ? "overflow-hidden p-2 sm:p-3 lg:p-4" : "overflow-auto p-3 sm:p-5 lg:p-6 xl:p-8"
           )}
         >
-          {children}
-        </div>
-      </main>
+          <div
+            className={cn(
+              "animate-fade-in",
+              isPos
+                ? "mx-auto flex h-[calc(100dvh-3.5rem)] flex-col lg:h-[calc(100dvh-2rem)] lg:max-h-none"
+                : "mx-auto max-w-7xl"
+            )}
+          >
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

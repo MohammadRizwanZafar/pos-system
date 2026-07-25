@@ -251,21 +251,27 @@
 
   <main class="wrap">
     <section id="install">
-      <h2>Install</h2>
+      <h2>Install / How to run</h2>
+      <h3>Windows (Laragon) — terminal commands</h3>
+      <p>Laragon → Start All, then Add Laragon to Path. Open CMD in project folder:</p>
+      <p><strong>First time</strong></p>
+      <div class="code">git clone https://github.com/MohammadRizwanZafar/pos-system.git
+cd pos-system
+pos setup
+pos start</div>
+      <p><strong>Every day</strong></p>
+      <div class="code">pos start</div>
+      <p><strong>Stop</strong></p>
+      <div class="code">pos stop</div>
+      <p>PowerShell: use <code>.\pos setup</code> / <code>.\pos start</code> / <code>.\pos stop</code></p>
+      <p>Open <code>http://localhost:9050</code> (Frontend) · API <code>http://localhost:9051</code></p>
+
       <h3>Docker</h3>
       <div class="code">git clone https://github.com/MohammadRizwanZafar/pos-system.git
 cd pos-system
 cp .env.example .env
 docker compose up --build -d</div>
-
-      <h3>Windows (Laragon)</h3>
-      <ol>
-        <li>Start Laragon (MySQL on)</li>
-        <li>Clone the project</li>
-        <li>Run <code>scripts\setup-native.bat</code></li>
-        <li>Daily: <code>start-pos.bat</code> / <code>stop-pos.bat</code></li>
-      </ol>
-      <p>Then open the POS app in your browser.</p>
+      <p>Then open <code>http://localhost:9050</code>.</p>
     </section>
 
     <section id="login">

@@ -13,28 +13,41 @@ class ProductService
     public function listProducts(
         ?string $search = null,
         ?int $categoryId = null,
-        ?int $perPage = null
+        ?int $perPage = null,
+        bool $activeOnly = false
     ) {
         $search = $search !== null ? trim($search) : null;
         if ($search === '') {
             $search = null;
         }
 
-        $query = Product::with('category')
+        $query = Product::query()
+            ->with(['category:id,name'])
+            ->select([
+                'id', 'shop_id', 'category_id', 'name', 'sku', 'barcode',
+                'image', 'price', 'discount_percent', 'cost', 'stock', 'is_active',
+                'created_at', 'updated_at',
+            ])
             ->when($search, function ($q) use ($search) {
                 $like = "%{$search}%";
                 $compact = "%".str_replace(['-', ' '], '', $search)."%";
 
-                $q->where(function ($searchQuery) use ($like, $compact) {
+                $q->where(function ($searchQuery) use ($like, $compact, $search) {
                     $searchQuery->where('name', 'like', $like)
                         ->orWhere('sku', 'like', $like)
                         ->orWhere('barcode', 'like', $like)
                         // Match SKU even when user omits dashes: "aut0012" / "0012"
                         ->orWhereRaw("REPLACE(sku, '-', '') LIKE ?", [$compact]);
+
+                    // Exact barcode / SKU first-path for scanners (uses indexes better)
+                    if (strlen($search) >= 3) {
+                        $searchQuery->orWhere('barcode', $search)
+                            ->orWhere('sku', $search);
+                    }
                 });
             })
             ->when($categoryId, fn ($q) => $q->where('category_id', $categoryId))
-            ->where('is_active', true)
+            ->when($activeOnly, fn ($q) => $q->where('is_active', true))
             ->orderBy('name');
 
         if (! $perPage) {
@@ -61,6 +74,7 @@ class ProductService
 
             $data['sku'] = $this->generateSku($data['name']);
             $data['barcode'] = $this->generateBarcode($data['sku']);
+            $data['discount_percent'] = $data['discount_percent'] ?? 0;
 
             if ($image) {
                 $data['image'] = $image->store('products', 'public');

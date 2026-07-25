@@ -11,14 +11,53 @@ use Illuminate\Support\Str;
 
 class ShopService
 {
-    public function listShops()
+    public function listShops(?string $search = null, ?int $perPage = null)
     {
-        return Shop::with(['owner.roles'])
+        $search = $search !== null ? trim($search) : null;
+        if ($search === '') {
+            $search = null;
+        }
+
+        $query = Shop::query()
+            ->with(['owner:id,shop_id,name,email'])
             ->withCount([
                 'users as cashiers_count' => fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', 'cashier')),
             ])
-            ->orderBy('name')
-            ->get();
+            ->when($search, function ($q) use ($search) {
+                $like = "%{$search}%";
+                $q->where(function ($searchQuery) use ($like) {
+                    $searchQuery->where('name', 'like', $like)
+                        ->orWhere('phone', 'like', $like)
+                        ->orWhereHas('owner', function ($ownerQuery) use ($like) {
+                            $ownerQuery->where('name', 'like', $like)
+                                ->orWhere('email', 'like', $like);
+                        });
+                });
+            })
+            ->orderBy('name');
+
+        if (! $perPage) {
+            return $query->get();
+        }
+
+        $paginator = $query->paginate(min(max($perPage, 1), 100));
+
+        return [
+            'items' => $paginator->items(),
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+            ],
+            'summary' => [
+                'total_shops' => Shop::count(),
+                'active_shops' => Shop::where('is_active', true)->count(),
+                'total_cashiers' => User::query()
+                    ->whereHas('roles', fn ($r) => $r->where('name', 'cashier'))
+                    ->count(),
+            ],
+        ];
     }
 
     public function getShop(Shop $shop): Shop

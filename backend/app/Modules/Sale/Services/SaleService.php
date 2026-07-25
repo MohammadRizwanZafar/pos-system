@@ -15,7 +15,9 @@ class SaleService
     {
         return DB::transaction(function () use ($user, $data) {
             $settings = StoreSetting::first();
-            $taxPercent = $settings?->tax_percent ?? 0;
+            $taxPercent = array_key_exists('tax_percent', $data)
+                ? (float) $data['tax_percent']
+                : (float) ($settings?->tax_percent ?? 0);
             $discount = $data['discount'] ?? 0;
 
             $subtotal = 0;
@@ -36,13 +38,14 @@ class SaleService
                     ]);
                 }
 
-                $lineTotal = $product->price * $item['quantity'];
+                $unitPrice = (float) $product->sell_price;
+                $lineTotal = $unitPrice * $item['quantity'];
                 $subtotal += $lineTotal;
 
                 $lineItems[] = [
                     'product' => $product,
                     'quantity' => $item['quantity'],
-                    'price' => $product->price,
+                    'price' => $unitPrice,
                     'cost' => $product->cost ?? 0,
                     'total' => $lineTotal,
                 ];
@@ -101,7 +104,7 @@ class SaleService
         ?string $search = null,
         ?int $perPage = null
     ) {
-        $query = Sale::with(['user:id,name', 'returns:id,sale_id,refund_amount'])
+        $query = Sale::with(['user:id,name'])
             ->active()
             ->when($fromDate, fn ($q) => $q->where('created_at', '>=', "{$fromDate} 00:00:00"))
             ->when($toDate, fn ($q) => $q->where('created_at', '<=', "{$toDate} 23:59:59"))

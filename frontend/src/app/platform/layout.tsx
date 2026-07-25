@@ -37,6 +37,7 @@ export default function PlatformLayout({
         router.replace("/dashboard");
         return;
       }
+      setLoading(false);
     }
 
     apiGet<User>("/auth/me")

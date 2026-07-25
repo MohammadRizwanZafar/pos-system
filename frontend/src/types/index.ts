@@ -70,6 +70,8 @@ export interface Product {
   image: string | null;
   image_url: string | null;
   price: string;
+  discount_percent: string;
+  sell_price: string;
   cost: string | null;
   stock: number;
   is_active: boolean;

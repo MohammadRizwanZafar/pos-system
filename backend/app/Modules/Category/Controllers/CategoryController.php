@@ -9,6 +9,7 @@ use App\Modules\Category\Requests\UpdateCategoryRequest;
 use App\Modules\Category\Services\CategoryService;
 use App\Traits\ApiResponse;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
@@ -16,9 +17,13 @@ class CategoryController extends Controller
 
     public function __construct(private CategoryService $categoryService) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return $this->success($this->categoryService->listCategories());
+        return $this->success($this->categoryService->listCategories(
+            $request->search,
+            $request->has('per_page') ? $request->integer('per_page') : null,
+            $request->boolean('active_only')
+        ));
     }
 
     public function store(StoreCategoryRequest $request): JsonResponse

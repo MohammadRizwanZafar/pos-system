@@ -20,6 +20,34 @@ export function formatCurrency(amount: number | string, symbol = "Rs."): string 
   return `${symbol} ${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+export function getProductSellPrice(product: {
+  price: string | number;
+  discount_percent?: string | number | null;
+  sell_price?: string | number | null;
+}): number {
+  if (product.sell_price != null && product.sell_price !== "") {
+    return typeof product.sell_price === "string"
+      ? parseFloat(product.sell_price)
+      : product.sell_price;
+  }
+
+  const price =
+    typeof product.price === "string" ? parseFloat(product.price) : product.price;
+  const discount = Math.min(
+    100,
+    Math.max(
+      0,
+      product.discount_percent == null || product.discount_percent === ""
+        ? 0
+        : typeof product.discount_percent === "string"
+          ? parseFloat(product.discount_percent)
+          : product.discount_percent
+    )
+  );
+
+  return Math.round(price * (1 - discount / 100) * 100) / 100;
+}
+
 export function formatDate(date: string): string {
   return new Date(date).toLocaleDateString("en-US", {
     year: "numeric",
