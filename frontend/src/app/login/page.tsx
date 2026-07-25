@@ -165,12 +165,6 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
-
-          <div className="mt-6 space-y-1 text-center text-xs text-slate-400">
-            <p>Platform Admin: superadmin@pos.com / password</p>
-            <p>Shop Owner: admin@pos.com / password</p>
-            <p>Cashier: cashier@pos.com / password</p>
-          </div>
         </div>
       </div>
     </div>

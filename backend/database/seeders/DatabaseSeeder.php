@@ -49,10 +49,13 @@ class DatabaseSeeder extends Seeder
             [
                 'shop_id' => null,
                 'name' => 'Super Admin',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('admin0101'),
                 'is_active' => true,
             ]
         );
+        if (! Hash::check('admin0101', $superAdmin->password)) {
+            $superAdmin->update(['password' => Hash::make('admin0101')]);
+        }
         $superAdmin->syncRoles(['super_admin']);
 
         $admin = User::firstOrCreate(

@@ -100,7 +100,7 @@ echo.
 echo   NEXT STEP: Double-click start-pos.bat
 echo.
 echo   LOGINS:
-echo   Platform Admin: superadmin@pos.com / password
+echo   Platform Admin: superadmin@pos.com / admin0101
 echo   Shop Owner:     admin@pos.com / password
 echo   Cashier:        cashier@pos.com / password
 echo.
@@ -124,7 +124,7 @@ echo 2. Double-click start-pos.bat
 echo 3. Open http://localhost:9050
 echo.
 echo LOGINS:
-echo Platform Admin: superadmin@pos.com / password
+echo Platform Admin: superadmin@pos.com / admin0101
 echo Shop Owner:     admin@pos.com / password
 echo Cashier:        cashier@pos.com / password
 echo.

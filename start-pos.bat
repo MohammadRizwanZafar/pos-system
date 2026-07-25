@@ -75,7 +75,7 @@ echo   http://localhost:9050
 echo.
 echo   API port: 9051  ^(auto - no need to open^)
 echo.
-echo   Platform Admin: superadmin@pos.com / password
+echo   Platform Admin: superadmin@pos.com / admin0101
 echo   Shop Owner:     admin@pos.com / password
 echo.
 echo   Keep both black windows open while using POS.

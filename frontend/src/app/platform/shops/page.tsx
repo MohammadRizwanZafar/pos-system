@@ -150,7 +150,7 @@ export default function PlatformShopsPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Shops</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Har shop ka apna owner aur cashiers — sab alag data
+            Each shop has its own owner and cashiers — data is fully separate
           </p>
         </div>
         <button
@@ -409,7 +409,7 @@ export default function PlatformShopsPage() {
               <div className="rounded-xl bg-emerald-50 p-4">
                 <p className="text-sm font-semibold text-emerald-800">Owner Account</p>
                 <p className="mt-1 text-xs text-emerald-700">
-                  Ye login shop owner ko dena — full access milega
+                  Give this login to the shop owner — they get full access
                 </p>
               </div>
 

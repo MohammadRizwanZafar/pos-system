@@ -26,7 +26,7 @@ Open the POS app in the browser when ready.
 
 | Role | Email | Password |
 |------|-------|----------|
-| Super Admin | `superadmin@pos.com` | `password` |
+| Super Admin | `superadmin@pos.com` | `admin0101` |
 | Owner | `admin@pos.com` | `password` |
 | Cashier | `cashier@pos.com` | `password` |
 
