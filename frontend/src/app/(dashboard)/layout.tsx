@@ -53,8 +53,15 @@ export default function DashboardLayout({
       }
     }
 
+    let cancelled = false;
+    const timeout = window.setTimeout(() => {
+      // Don't keep a blank screen forever if API is slow
+      if (!cancelled) setLoading(false);
+    }, 4000);
+
     apiGet<User>("/auth/me")
       .then((freshUser) => {
+        if (cancelled) return;
         setUser(freshUser);
         setUserState(freshUser);
 
@@ -68,10 +75,21 @@ export default function DashboardLayout({
         }
       })
       .catch(() => {
-        clearAuth();
-        router.replace("/login");
+        if (cancelled) return;
+        if (!getUser()) {
+          clearAuth();
+          router.replace("/login");
+        }
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+        window.clearTimeout(timeout);
+      });
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeout);
+    };
     // Auth refresh should not re-run on every route change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);

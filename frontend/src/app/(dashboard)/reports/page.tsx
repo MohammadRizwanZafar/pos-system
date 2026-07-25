@@ -7,7 +7,7 @@ import PageLoader from "@/components/ui/PageLoader";
 import { Pagination, SearchInput } from "@/components/ui/TableControls";
 import { apiGet } from "@/lib/api";
 import { isAdmin } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, localDateString } from "@/lib/utils";
 import type { ReportData } from "@/types";
 
 type Tab = "daily" | "weekly" | "monthly";
@@ -17,14 +17,14 @@ function getMonthRange(month: string): { from_date: string; to_date: string } {
   const start = new Date(year, m - 1, 1);
   const end = new Date(year, m, 0);
   return {
-    from_date: start.toISOString().split("T")[0],
-    to_date: end.toISOString().split("T")[0],
+    from_date: localDateString(start),
+    to_date: localDateString(end),
   };
 }
 
 export default function ReportsPage() {
   const [tab, setTab] = useState<Tab>("daily");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(localDateString());
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [month, setMonth] = useState(

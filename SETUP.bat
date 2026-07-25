@@ -80,8 +80,10 @@ powershell -NoProfile -Command ^
   "$c=$c -replace '(?m)^APP_URL=.*$','APP_URL=http://localhost:9051';" ^
   "$c=$c -replace '(?m)^FRONTEND_URL=.*$','FRONTEND_URL=http://localhost:9050';" ^
   "$c=$c -replace '(?m)^SANCTUM_STATEFUL_DOMAINS=.*$','SANCTUM_STATEFUL_DOMAINS=localhost:9050,127.0.0.1:9050';" ^
+  "$c=$c -replace '(?m)^APP_TIMEZONE=.*$','APP_TIMEZONE=Asia/Karachi';" ^
   "if ($c -notmatch '(?m)^FRONTEND_URL=') { $c += \"`r`nFRONTEND_URL=http://localhost:9050\" };" ^
   "if ($c -notmatch '(?m)^SANCTUM_STATEFUL_DOMAINS=') { $c += \"`r`nSANCTUM_STATEFUL_DOMAINS=localhost:9050,127.0.0.1:9050\" };" ^
+  "if ($c -notmatch '(?m)^APP_TIMEZONE=') { $c += \"`r`nAPP_TIMEZONE=Asia/Karachi\" };" ^
   "Set-Content -Path $envFile -Value $c -NoNewline"
 
 powershell -NoProfile -Command ^

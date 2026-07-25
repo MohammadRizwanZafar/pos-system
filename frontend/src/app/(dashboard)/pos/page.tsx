@@ -12,6 +12,7 @@ import {
   ScanBarcode,
   Wallet,
   Check,
+  Printer,
 } from "lucide-react";
 import { apiGet, apiPost } from "@/lib/api";
 import { useCartStore } from "@/store/cartStore";
@@ -19,7 +20,8 @@ import PageLoader from "@/components/ui/PageLoader";
 import ProductAvatar from "@/components/ui/ProductAvatar";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { Pagination } from "@/components/ui/TableControls";
-import { cn, formatCurrency, getApiErrorMessage, getProductSellPrice } from "@/lib/utils";
+import { printSaleReceipt } from "@/lib/printReceipt";
+import { cn, formatCurrency, getApiErrorMessage, getProductSellPrice, localDateString } from "@/lib/utils";
 import type { Category, PaginatedData, Product, Sale, StoreSettings } from "@/types";
 
 const EXPENSE_CATEGORIES = ["Supplies", "Utilities", "Rent", "Transport", "Other"];
@@ -36,6 +38,7 @@ export default function POSPage() {
   const [cashAmount, setCashAmount] = useState("");
   const [note, setNote] = useState("");
   const [taxPercent, setTaxPercent] = useState(0);
+  const [printReceipt, setPrintReceipt] = useState(true);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
@@ -64,10 +67,10 @@ export default function POSPage() {
     const load = async () => {
       try {
         const [cats, storeSettings] = await Promise.all([
-          apiGet<Category[]>("/categories", { active_only: 1 }),
+          apiGet<Category[] | PaginatedData<Category>>("/categories", { active_only: 1 }),
           apiGet<StoreSettings>("/settings").catch(() => null),
         ]);
-        setCategories(cats);
+        setCategories(Array.isArray(cats) ? cats : cats?.items ?? []);
         setSettings(storeSettings);
         if (storeSettings) {
           setTaxPercent(parseFloat(storeSettings.tax_percent) || 0);
@@ -81,6 +84,8 @@ export default function POSPage() {
 
   useEffect(() => {
     let cancelled = false;
+    // Search debounce only — first paint / page change loads immediately
+    const delay = search.trim() ? 250 : 0;
     const timer = setTimeout(async () => {
       try {
         setLoading(true);
@@ -94,15 +99,15 @@ export default function POSPage() {
         if (categoryId) params.category_id = categoryId;
         const data = await apiGet<PaginatedData<Product>>("/products", params);
         if (cancelled) return;
-        setProducts(data.items);
-        setProductPages(data.meta.last_page);
-        setProductTotal(data.meta.total);
+        setProducts(data?.items ?? []);
+        setProductPages(data?.meta?.last_page ?? 1);
+        setProductTotal(data?.meta?.total ?? 0);
       } catch {
-        // keep current list
+        if (!cancelled) setProducts([]);
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }, 250);
+    }, delay);
     return () => {
       cancelled = true;
       clearTimeout(timer);
@@ -131,6 +136,8 @@ export default function POSPage() {
     setSuccess("");
     setProcessing(true);
 
+    const shouldPrint = printReceipt;
+
     try {
       const sale = await apiPost<Sale>("/sales", {
         items: items.map((i) => ({
@@ -147,10 +154,28 @@ export default function POSPage() {
       setCashAmount("");
       setNote("");
       setTaxPercent(defaultTaxPercent);
-      setSuccess(`Sale completed! Invoice: ${sale.invoice_no}`);
+      setSuccess(
+        shouldPrint
+          ? `Sale completed! Printing receipt: ${sale.invoice_no}`
+          : `Sale completed! Invoice: ${sale.invoice_no}`
+      );
+      setProcessing(false);
+
+      if (shouldPrint) {
+        // Print after UI unlocks so the button is not stuck on "Processing..."
+        window.setTimeout(async () => {
+          try {
+            const invoice = await apiGet<{ sale: Sale; store: StoreSettings | null }>(
+              `/sales/${sale.id}/invoice`
+            );
+            printSaleReceipt(invoice.sale, invoice.store ?? settings);
+          } catch {
+            printSaleReceipt(sale, settings);
+          }
+        }, 50);
+      }
     } catch (err) {
       setError(getApiErrorMessage(err));
-    } finally {
       setProcessing(false);
     }
   };
@@ -165,7 +190,7 @@ export default function POSPage() {
         title: expenseForm.title,
         category: expenseForm.category || null,
         amount: parseFloat(expenseForm.amount),
-        expense_date: new Date().toISOString().split("T")[0],
+        expense_date: localDateString(),
         note: expenseForm.note || null,
       });
       setExpenseForm({ title: "", category: "", amount: "", note: "" });
@@ -579,6 +604,17 @@ export default function POSPage() {
               onChange={(e) => setNote(e.target.value)}
             />
 
+            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+              <input
+                type="checkbox"
+                checked={printReceipt}
+                onChange={(e) => setPrintReceipt(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+              />
+              <Printer className="h-4 w-4 text-slate-500" />
+              Print receipt after sale
+            </label>
+
             <button
               type="button"
               onClick={handleCompleteSale}
@@ -589,8 +625,8 @@ export default function POSPage() {
                 "Processing..."
               ) : (
                 <>
-                  <Check className="h-5 w-5" />
-                  Complete Sale
+                  {printReceipt ? <Printer className="h-5 w-5" /> : <Check className="h-5 w-5" />}
+                  {printReceipt ? "Complete Sale & Print" : "Complete Sale"}
                 </>
               )}
             </button>

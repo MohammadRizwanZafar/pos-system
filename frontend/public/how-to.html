@@ -252,21 +252,46 @@
   <main class="wrap">
     <section id="install">
       <h2>Install / How to run</h2>
-      <h3>Windows (Laragon) — terminal commands</h3>
-      <p>Laragon → Start All, then Add Laragon to Path. Open CMD in project folder:</p>
-      <p><strong>First time</strong></p>
-      <div class="code">git clone https://github.com/MohammadRizwanZafar/pos-system.git
-cd pos-system
-pos setup
-pos start</div>
-      <p><strong>Every day</strong></p>
-      <div class="code">pos start</div>
-      <p><strong>Stop</strong></p>
-      <div class="code">pos stop</div>
-      <p>PowerShell: use <code>.\pos setup</code> / <code>.\pos start</code> / <code>.\pos stop</code></p>
-      <p>Open <code>http://localhost:9050</code> (Frontend) · API <code>http://localhost:9051</code></p>
 
-      <h3>Docker</h3>
+      <h3>Before you start (Windows)</h3>
+      <ol>
+        <li>Install <strong>Laragon Full</strong></li>
+        <li>Laragon → <strong>Start All</strong> (MySQL ON)</li>
+        <li>Laragon → Menu → Tools → Path → <strong>Add Laragon to Path</strong></li>
+        <li>Close and reopen CMD / PowerShell</li>
+      </ol>
+
+      <h3>1) Clone the project</h3>
+      <div class="code">git clone https://github.com/MohammadRizwanZafar/pos-system.git
+cd pos-system</div>
+
+      <h3>2) First-time setup (once)</h3>
+      <p>CMD:</p>
+      <div class="code">pos setup</div>
+      <p>PowerShell:</p>
+      <div class="code">.\pos setup</div>
+      <p>Or double-click <code>SETUP.bat</code>. This creates env files, runs composer, migrate + seed, npm install, and build.</p>
+
+      <h3>3) Start every day</h3>
+      <p>Laragon → Start All, then:</p>
+      <div class="code">pos start</div>
+      <p>PowerShell: <code>.\pos start</code> · or double-click <code>START.bat</code></p>
+
+      <h3>4) Open in browser</h3>
+      <div class="code">Frontend (POS):  http://localhost:9050
+Backend API:     http://localhost:9051
+API base:        http://localhost:9051/api/v1</div>
+
+      <h3>5) Stop</h3>
+      <div class="code">pos stop</div>
+      <p>Or double-click <code>STOP.bat</code></p>
+
+      <h3>Demo logins</h3>
+      <div class="code">Platform Admin:  superadmin@pos.com / admin0101
+Shop Owner:      admin@pos.com / password
+Cashier:         cashier@pos.com / password</div>
+
+      <h3>Docker (optional)</h3>
       <div class="code">git clone https://github.com/MohammadRizwanZafar/pos-system.git
 cd pos-system
 cp .env.example .env

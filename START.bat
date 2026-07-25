@@ -47,17 +47,6 @@ if not exist "%ROOT%\frontend\.env.local" (
     echo NEXT_PUBLIC_API_URL=http://localhost:9051/api/v1> "%ROOT%\frontend\.env.local"
 )
 
-if not exist "%ROOT%\frontend\.next" (
-    echo Frontend not built yet. Building...
-    cd /d "%ROOT%\frontend"
-    call npm run build
-    if errorlevel 1 (
-        echo [ERROR] Frontend build failed.
-        goto :fail
-    )
-    cd /d "%ROOT%"
-)
-
 REM Free ports if old process still running
 for %%P in (9050 9051) do (
     for /f "tokens=5" %%A in ('netstat -ano ^| findstr /R /C:":%%P .*LISTENING"') do (
@@ -70,11 +59,11 @@ echo.
 echo Starting BACKEND API on port 9051 ...
 start "ShopPOS Backend API :9051" cmd /k "cd /d "%ROOT%\backend" && php artisan serve --host=127.0.0.1 --port=9051"
 
-timeout /t 3 /nobreak >nul
+timeout /t 2 /nobreak >nul
 
 echo Starting FRONTEND POS on port 9050 ...
-REM Important: package.json defaults to 3100 for Docker — force 9050 here
-start "ShopPOS Frontend :9050" cmd /k "cd /d "%ROOT%\frontend" && npx --no-install next start --hostname 127.0.0.1 --port 9050"
+REM Use next dev so latest code loads ^(avoids blank/stale production build^)
+start "ShopPOS Frontend :9050" cmd /k "cd /d "%ROOT%\frontend" && npx --no-install next dev --hostname 127.0.0.1 --port 9050"
 
 echo.
 echo  ========================================
@@ -88,8 +77,9 @@ echo   BACKEND API:
 echo   http://localhost:9051
 echo   http://localhost:9051/api/v1
 echo.
+echo   First open can take 10-20 sec while Next.js compiles.
 echo   Keep the two black windows open while using POS.
-echo   To stop: run STOP.bat
+echo   To stop: run STOP.bat  ^(or pos stop^)
 echo.
 echo   Logins:
 echo   superadmin@pos.com / admin0101
@@ -97,7 +87,7 @@ echo   admin@pos.com / password
 echo  ========================================
 echo.
 
-timeout /t 6 /nobreak >nul
+timeout /t 8 /nobreak >nul
 start "" "http://localhost:9050"
 exit /b 0
 

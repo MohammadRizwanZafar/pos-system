@@ -6,7 +6,7 @@ import Header from "@/components/layout/Header";
 import PeriodFilter, { type Period } from "@/components/ui/PeriodFilter";
 import { Pagination, SearchInput } from "@/components/ui/TableControls";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
-import { formatCurrency, formatDate, getApiErrorMessage, getDateRange } from "@/lib/utils";
+import { formatCurrency, formatDate, getApiErrorMessage, getDateRange, localDateString } from "@/lib/utils";
 import type { Expense, PaginatedData } from "@/types";
 
 interface ExpenseForm {
@@ -21,7 +21,7 @@ const emptyForm = (): ExpenseForm => ({
   title: "",
   category: "",
   amount: "",
-  expense_date: new Date().toISOString().split("T")[0],
+  expense_date: localDateString(),
   note: "",
 });
 
@@ -35,7 +35,7 @@ export default function ExpensesPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  const [period, setPeriod] = useState<Period>("month");
+  const [period, setPeriod] = useState<Period>("today");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [page, setPage] = useState(1);

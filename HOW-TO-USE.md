@@ -2,49 +2,54 @@
 
 ## Install / How to run
 
-### Windows (Laragon) — recommended
+### Before you start (Windows)
 
-Pehle Laragon → **Start All** (MySQL ON), phir  
-Laragon → Menu → Tools → Path → **Add Laragon to Path** (terminal dubara kholo).
+1. Install **Laragon Full**
+2. Laragon → **Start All** (MySQL ON)
+3. Laragon → Menu → Tools → Path → **Add Laragon to Path**
+4. Close and reopen CMD / PowerShell
 
-**CMD — first time:**
+### 1) Clone
 
 ```bat
 git clone https://github.com/MohammadRizwanZafar/pos-system.git
 cd pos-system
-pos setup
-pos start
 ```
 
-**CMD — every day:**
+### 2) First-time setup (once)
 
 ```bat
-cd pos-system
+pos setup
+```
+
+PowerShell: `.\pos setup` · or double-click `SETUP.bat`  
+(Creates env, composer, migrate + seed, npm install/build)
+
+### 3) Start every day
+
+Laragon → Start All, then:
+
+```bat
 pos start
 ```
 
-**CMD — stop:**
+PowerShell: `.\pos start` · or double-click `START.bat`
+
+### 4) Open in browser
+
+| Service | URL |
+|---------|-----|
+| Frontend (POS) | http://localhost:9050 |
+| Backend API | http://localhost:9051 |
+| API base | http://localhost:9051/api/v1 |
+
+### 5) Stop
 
 ```bat
 pos stop
 ```
 
-**PowerShell** (same, with `.\`):
-
-```powershell
-git clone https://github.com/MohammadRizwanZafar/pos-system.git
-cd pos-system
-.\pos setup
-.\pos start
-```
-
-Double-click bhi chalega: `SETUP.bat` / `START.bat` / `STOP.bat`.
-
-| Service | URL / Port |
-|---------|------------|
-| Frontend (POS) | http://localhost:9050 |
-| Backend API | http://localhost:9051 |
-| API base | http://localhost:9051/api/v1 |
+Or double-click `STOP.bat`.
 
 ---
 

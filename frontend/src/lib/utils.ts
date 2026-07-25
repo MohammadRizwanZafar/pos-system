@@ -66,13 +66,21 @@ export function formatDateTime(date: string): string {
   });
 }
 
+/** Local calendar date YYYY-MM-DD (not UTC — avoids off-by-one after midnight). */
+export function localDateString(date: Date = new Date()): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function getDateRange(
   period: "today" | "week" | "month" | "custom",
   customFrom?: string,
   customTo?: string
 ): { from_date: string; to_date: string } {
   const today = new Date();
-  const to_date = today.toISOString().split("T")[0];
+  const to_date = localDateString(today);
 
   if (period === "custom" && customFrom && customTo) {
     return { from_date: customFrom, to_date: customTo };
@@ -81,12 +89,12 @@ export function getDateRange(
   if (period === "week") {
     const weekAgo = new Date(today);
     weekAgo.setDate(weekAgo.getDate() - 6);
-    return { from_date: weekAgo.toISOString().split("T")[0], to_date };
+    return { from_date: localDateString(weekAgo), to_date };
   }
 
   if (period === "month") {
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    return { from_date: monthStart.toISOString().split("T")[0], to_date };
+    return { from_date: localDateString(monthStart), to_date };
   }
 
   return { from_date: to_date, to_date };
