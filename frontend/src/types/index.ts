@@ -171,6 +171,15 @@ export interface Expense {
   user?: User;
 }
 
+export interface OpeningCash {
+  id: number;
+  user_id: number;
+  business_date: string;
+  amount: string;
+  note: string | null;
+  user?: User;
+}
+
 export interface StoreSettings {
   id: number;
   store_name: string;
@@ -185,11 +194,37 @@ export interface DashboardStats {
   period: string;
   from_date: string;
   to_date: string;
+  opening_cash: number;
   total_sales: number;
   order_count: number;
   total_expenses: number;
+  cash_in_hand: number;
   profit: number;
   net_profit: number;
+}
+
+export interface SoldProductItem {
+  sold_date: string;
+  product_id: number | null;
+  product_name: string;
+  sku: string | null;
+  quantity_sold: number;
+  times_sold: number;
+  unit_cost: number;
+  total_cost: number;
+  net_amount: number;
+}
+
+export interface SoldProductsData {
+  period: string;
+  from_date: string;
+  to_date: string;
+  product_count: number;
+  total_quantity: number;
+  total_cost: number;
+  total_amount: number;
+  items: SoldProductItem[];
+  meta?: PaginationMeta | null;
 }
 
 export interface ReportData {

@@ -2,18 +2,40 @@ import type { User } from "@/types";
 
 const TOKEN_KEY = "pos_token";
 const USER_KEY = "pos_user";
+const TOKEN_AT_KEY = "pos_token_at";
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+function isTokenExpired(): boolean {
+  if (typeof window === "undefined") return true;
+  const raw = localStorage.getItem(TOKEN_AT_KEY);
+  if (!raw) return true;
+  const loginAt = Number(raw);
+  if (!Number.isFinite(loginAt)) return true;
+  return Date.now() - loginAt >= ONE_DAY_MS;
+}
 
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return null;
+  if (isTokenExpired()) {
+    clearAuth();
+    return null;
+  }
+  return token;
 }
 
 export function setToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(TOKEN_AT_KEY, String(Date.now()));
 }
 
 export function getUser(): User | null {
   if (typeof window === "undefined") return null;
+  if (isTokenExpired()) {
+    clearAuth();
+    return null;
+  }
   const raw = localStorage.getItem(USER_KEY);
   if (!raw) return null;
   try {
@@ -30,6 +52,7 @@ export function setUser(user: User): void {
 export function clearAuth(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(TOKEN_AT_KEY);
 }
 
 export function isAuthenticated(): boolean {

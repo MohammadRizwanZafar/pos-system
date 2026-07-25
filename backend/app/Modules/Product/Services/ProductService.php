@@ -15,12 +15,24 @@ class ProductService
         ?int $categoryId = null,
         ?int $perPage = null
     ) {
+        $search = $search !== null ? trim($search) : null;
+        if ($search === '') {
+            $search = null;
+        }
+
         $query = Product::with('category')
-            ->when($search, fn ($q) => $q->where(function ($searchQuery) use ($search) {
-                $searchQuery->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
-            }))
+            ->when($search, function ($q) use ($search) {
+                $like = "%{$search}%";
+                $compact = "%".str_replace(['-', ' '], '', $search)."%";
+
+                $q->where(function ($searchQuery) use ($like, $compact) {
+                    $searchQuery->where('name', 'like', $like)
+                        ->orWhere('sku', 'like', $like)
+                        ->orWhere('barcode', 'like', $like)
+                        // Match SKU even when user omits dashes: "aut0012" / "0012"
+                        ->orWhereRaw("REPLACE(sku, '-', '') LIKE ?", [$compact]);
+                });
+            })
             ->when($categoryId, fn ($q) => $q->where('category_id', $categoryId))
             ->where('is_active', true)
             ->orderBy('name');

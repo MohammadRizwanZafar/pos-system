@@ -40,8 +40,11 @@ Open the POS app in the browser when ready.
 | Dashboard | No | Yes | No |
 | POS | No | Yes | Yes |
 | Products | No | Full | View only |
+| Categories | No | Full | View only |
 | Sales | No | Yes | Yes |
+| Sold Products | No | Yes | No |
 | Returns | No | Yes | Yes |
+| Opening Cash | No | Yes | No |
 | Expenses | No | Yes | No |
 | Reports | No | Yes | No |
 | Users | No | Yes | No |
@@ -69,6 +72,10 @@ Owner then logs in with that account.
 **Sales** — View invoices by period. Fully returned sales are hidden. Partial returns show net total.
 
 **Returns** — Enter invoice → set return qty → **Process Return**. Stock is restored. Full return removes the sale from Sales and Dashboard.
+
+**Opening Cash** — Set drawer cash when the shop opens. Dashboard shows opening cash and cash in hand.
+
+**Sold Products** — See which products sold, quantity, times sold, cost, and amount. Search by name or SKU. Filter by day, week, or month.
 
 **Expenses / Reports / Users / Settings** — Record costs, view reports, manage staff, update store name/tax/currency.
 

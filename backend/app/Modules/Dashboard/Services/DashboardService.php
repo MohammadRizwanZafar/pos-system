@@ -4,6 +4,7 @@ namespace App\Modules\Dashboard\Services;
 
 use App\Models\User;
 use App\Modules\Expense\Models\Expense;
+use App\Modules\OpeningCash\Models\OpeningCash;
 use App\Modules\Sale\Models\Sale;
 use App\Modules\Sale\Services\SaleProfitService;
 use Carbon\Carbon;
@@ -32,13 +33,23 @@ class DashboardService
         $profit = $this->saleProfitService->calculateProfit($start, $end, $user);
         $netProfit = $profit - $totalExpenses;
 
+        // Day starts with opening cash recorded for the period start date
+        $openingCash = (float) (OpeningCash::query()
+            ->whereDate('business_date', $start->toDateString())
+            ->value('amount') ?? 0);
+
+        // Expected cash in drawer after period sales & expenses
+        $cashInHand = $openingCash + $totalSales - $totalExpenses;
+
         return [
             'period' => $period,
             'from_date' => $start->toDateString(),
             'to_date' => $end->toDateString(),
+            'opening_cash' => round($openingCash, 2),
             'total_sales' => round($totalSales, 2),
             'order_count' => $orderCount,
             'total_expenses' => round($totalExpenses, 2),
+            'cash_in_hand' => round($cashInHand, 2),
             'profit' => round($profit, 2),
             'net_profit' => round($netProfit, 2),
         ];

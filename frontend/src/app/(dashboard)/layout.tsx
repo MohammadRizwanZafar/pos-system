@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { User } from "@/types";
 
-const ownerOnlyRoutes = ["/dashboard", "/reports", "/users", "/settings"];
+const ownerOnlyRoutes = ["/dashboard", "/reports", "/users", "/settings", "/sold-products"];
 
 export default function DashboardLayout({
   children,

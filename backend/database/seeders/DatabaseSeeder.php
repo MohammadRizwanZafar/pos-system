@@ -3,8 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use App\Modules\Category\Models\Category;
-use App\Modules\Product\Models\Product;
 use App\Modules\Setting\Models\StoreSetting;
 use App\Modules\Shop\Models\Shop;
 use Illuminate\Database\Seeder;
@@ -84,49 +82,6 @@ class DatabaseSeeder extends Seeder
             $cashier->update(['shop_id' => $shop->id]);
         }
         $cashier->syncRoles(['cashier']);
-
-        $categories = [
-            ['name' => 'Drinks', 'slug' => 'drinks'],
-            ['name' => 'Snacks', 'slug' => 'snacks'],
-            ['name' => 'Grocery', 'slug' => 'grocery'],
-        ];
-
-        $categoryIds = [];
-        foreach ($categories as $cat) {
-            $category = Category::withoutGlobalScope('shop')->firstOrCreate(
-                ['shop_id' => $shop->id, 'slug' => $cat['slug']],
-                array_merge($cat, ['shop_id' => $shop->id])
-            );
-            $categoryIds[$cat['slug']] = $category->id;
-        }
-
-        $products = [
-            ['name' => 'Coca Cola 500ml', 'sku' => 'DRK-001', 'category' => 'drinks', 'price' => 80, 'cost' => 60, 'stock' => 100],
-            ['name' => 'Pepsi 500ml', 'sku' => 'DRK-002', 'category' => 'drinks', 'price' => 80, 'cost' => 60, 'stock' => 100],
-            ['name' => 'Mineral Water 1L', 'sku' => 'DRK-003', 'category' => 'drinks', 'price' => 50, 'cost' => 35, 'stock' => 150],
-            ['name' => 'Orange Juice 1L', 'sku' => 'DRK-004', 'category' => 'drinks', 'price' => 250, 'cost' => 180, 'stock' => 50],
-            ['name' => 'Potato Chips', 'sku' => 'SNK-001', 'category' => 'snacks', 'price' => 120, 'cost' => 80, 'stock' => 80],
-            ['name' => 'Chocolate Bar', 'sku' => 'SNK-002', 'category' => 'snacks', 'price' => 150, 'cost' => 100, 'stock' => 60],
-            ['name' => 'Biscuit Pack', 'sku' => 'SNK-003', 'category' => 'snacks', 'price' => 90, 'cost' => 60, 'stock' => 70],
-            ['name' => 'Rice 5kg', 'sku' => 'GRC-001', 'category' => 'grocery', 'price' => 850, 'cost' => 700, 'stock' => 30],
-            ['name' => 'Cooking Oil 1L', 'sku' => 'GRC-002', 'category' => 'grocery', 'price' => 450, 'cost' => 380, 'stock' => 40],
-            ['name' => 'Sugar 1kg', 'sku' => 'GRC-003', 'category' => 'grocery', 'price' => 180, 'cost' => 150, 'stock' => 50],
-        ];
-
-        foreach ($products as $product) {
-            Product::withoutGlobalScope('shop')->firstOrCreate(
-                ['shop_id' => $shop->id, 'sku' => $product['sku']],
-                [
-                    'shop_id' => $shop->id,
-                    'name' => $product['name'],
-                    'category_id' => $categoryIds[$product['category']],
-                    'price' => $product['price'],
-                    'cost' => $product['cost'],
-                    'stock' => $product['stock'],
-                    'is_active' => true,
-                ]
-            );
-        }
 
         StoreSetting::withoutGlobalScope('shop')->firstOrCreate(
             ['shop_id' => $shop->id],

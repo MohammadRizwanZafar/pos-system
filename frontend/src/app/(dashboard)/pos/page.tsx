@@ -76,6 +76,7 @@ export default function POSPage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     const timer = setTimeout(async () => {
       try {
         setLoading(true);
@@ -83,19 +84,24 @@ export default function POSPage() {
           page: productPage,
           per_page: 20,
         };
-        if (search) params.search = search;
+        const q = search.trim();
+        if (q) params.search = q;
         if (categoryId) params.category_id = categoryId;
         const data = await apiGet<PaginatedData<Product>>("/products", params);
+        if (cancelled) return;
         setProducts(data.items);
         setProductPages(data.meta.last_page);
         setProductTotal(data.meta.total);
       } catch {
         // keep current list
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    }, 300);
-    return () => clearTimeout(timer);
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [search, categoryId, productPage]);
 
   const taxPercent = settings ? parseFloat(settings.tax_percent) : 0;
@@ -229,7 +235,7 @@ export default function POSPage() {
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search products by name or barcode..."
+                placeholder="Search by name, SKU or barcode..."
                 className="input-field py-3 pl-10 pr-11 text-[15px]"
                 value={search}
                 onChange={(e) => {

@@ -18,6 +18,8 @@ class ModuleServiceProvider extends ServiceProvider
         'Report',
         'Setting',
         'Expense',
+        'OpeningCash',
+        'SoldProduct',
         'User',
     ];
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DollarSign, Receipt, TrendingUp, ShoppingBag, Wallet } from "lucide-react";
+import { DollarSign, Receipt, TrendingUp, ShoppingBag, Wallet, Banknote, HandCoins } from "lucide-react";
 import Header from "@/components/layout/Header";
 import PageLoader from "@/components/ui/PageLoader";
 import PeriodFilter, { type Period } from "@/components/ui/PeriodFilter";
@@ -32,9 +32,11 @@ export default function DashboardPage() {
           period,
           from_date: "",
           to_date: "",
+          opening_cash: 0,
           total_sales: 0,
           order_count: 0,
           total_expenses: 0,
+          cash_in_hand: 0,
           profit: 0,
           net_profit: 0,
         });
@@ -49,6 +51,14 @@ export default function DashboardPage() {
   }, [period, customFrom, customTo]);
 
   const cards = [
+    {
+      label: "Opening Cash",
+      value: formatCurrency(stats?.opening_cash ?? 0),
+      icon: Banknote,
+      gradient: "from-lime-500 to-green-600",
+      glow: "shadow-lime-500/30",
+      accent: "text-lime-600",
+    },
     {
       label: "Total Revenue",
       value: formatCurrency(stats?.total_sales ?? 0),
@@ -72,6 +82,14 @@ export default function DashboardPage() {
       gradient: "from-violet-500 to-purple-600",
       glow: "shadow-violet-500/30",
       accent: "text-violet-600",
+    },
+    {
+      label: "Cash in Hand",
+      value: formatCurrency(stats?.cash_in_hand ?? 0),
+      icon: HandCoins,
+      gradient: "from-sky-500 to-cyan-600",
+      glow: "shadow-sky-500/30",
+      accent: "text-sky-600",
     },
     {
       label: "Total Profit",
@@ -107,7 +125,7 @@ export default function DashboardPage() {
       {loading ? (
         <PageLoader />
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {cards.map((card) => {
             const Icon = card.icon;
             return (
@@ -126,18 +144,12 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <div
-                    className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${card.gradient} text-white shadow-lg ${card.glow} transition duration-300 group-hover:scale-110 group-hover:-rotate-6`}
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${card.gradient} text-white shadow-lg ${card.glow}`}
                   >
                     <Icon className="h-5 w-5" />
                   </div>
                 </div>
-                <div
-                  className={`mt-4 h-1 w-full overflow-hidden rounded-full bg-slate-100`}
-                >
-                  <div
-                    className={`h-full w-2/3 rounded-full bg-gradient-to-r ${card.gradient} transition-all duration-500 group-hover:w-full`}
-                  />
-                </div>
+                <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${card.gradient} opacity-80`} />
               </div>
             );
           })}
