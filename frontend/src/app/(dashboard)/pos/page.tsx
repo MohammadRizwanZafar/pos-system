@@ -204,13 +204,13 @@ export default function POSPage() {
   };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="pos-screen flex min-h-0 flex-1 flex-col">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2 sm:mb-3 sm:gap-3">
         <div className="min-w-0">
-          <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl xl:text-2xl">
+          <h1 className="pos-page-title font-bold tracking-tight text-slate-900">
             Point of Sale
           </h1>
-          <p className="truncate text-xs font-medium text-slate-500 sm:text-sm">
+          <p className="pos-page-sub truncate font-medium text-slate-500">
             {settings?.store_name ?? "Tap products to add to cart"}
           </p>
         </div>
@@ -263,13 +263,13 @@ export default function POSPage() {
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden xl:flex-row xl:gap-3 2xl:gap-4">
         {/* Products */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
-          <div className="space-y-2 border-b border-slate-100 p-2.5 sm:space-y-3 sm:p-4">
+          <div className="pos-products-head space-y-2 border-b border-slate-100 p-2.5 sm:space-y-3 sm:p-4">
             <div className="relative">
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search by name, SKU or barcode..."
-                className="input-field py-2.5 pl-10 pr-11 text-sm sm:py-3 sm:text-[15px]"
+                className="input-field py-2.5 pl-10 pr-11 sm:py-3"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -287,7 +287,7 @@ export default function POSPage() {
                   setProductPage(1);
                 }}
                 className={cn(
-                  "shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition",
+                  "pos-cat-chip shrink-0 rounded-full px-4 py-1.5 font-bold transition",
                   categoryId === ""
                     ? "bg-primary text-white shadow-sm"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -304,7 +304,7 @@ export default function POSPage() {
                     setProductPage(1);
                   }}
                   className={cn(
-                    "shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition",
+                    "pos-cat-chip shrink-0 rounded-full px-4 py-1.5 font-bold transition",
                     categoryId === c.id
                       ? "bg-primary text-white shadow-sm"
                       : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -343,32 +343,32 @@ export default function POSPage() {
                     />
                     <div className="flex flex-1 flex-col px-1 pb-1 pt-3">
                       <p
-                        className="line-clamp-2 min-h-[2.5rem] text-left text-sm font-bold leading-snug text-slate-800"
+                        className="pos-tile-name line-clamp-2 min-h-[2.5rem] text-left font-bold leading-snug text-slate-800"
                         title={product.name}
                       >
                         {product.name}
                       </p>
                       <div className="mt-auto pt-2 text-left">
                         {parseFloat(product.discount_percent || "0") > 0 ? (
-                          <p className="text-xs font-semibold text-slate-400 line-through">
+                          <p className="pos-tile-stock font-semibold text-slate-400 line-through">
                             {formatCurrency(product.price, currencySymbol)}
                           </p>
                         ) : null}
                         <p
-                          className="text-lg font-extrabold text-primary-600"
+                          className="pos-tile-price font-extrabold text-primary-600"
                           title={formatCurrency(getProductSellPrice(product), currencySymbol)}
                         >
                           {formatCurrency(getProductSellPrice(product), currencySymbol)}
                         </p>
                         {parseFloat(product.discount_percent || "0") > 0 && (
-                          <p className="text-[11px] font-bold text-emerald-600">
+                          <p className="pos-tile-stock font-bold text-emerald-600">
                             -{parseFloat(product.discount_percent).toFixed(0)}%
                           </p>
                         )}
                       </div>
                       <p
                         className={cn(
-                          "mt-0.5 text-left text-xs font-semibold",
+                          "pos-tile-stock mt-0.5 text-left font-semibold",
                           product.stock <= 0
                             ? "text-red-500"
                             : product.stock <= 5
@@ -398,12 +398,12 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* Cart — always visible; items scroll; checkout can scroll on short screens */}
-        <div className="pos-cart-panel h-[min(52vh,28rem)] w-full min-w-0 shrink-0 xl:h-full xl:w-[22rem] xl:min-w-[20rem] 2xl:w-[24rem]">
-          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-3 py-2 sm:px-4 sm:py-3">
+        {/* Cart — sticky Complete Sale; fonts scale via .pos-screen */}
+        <div className="pos-cart-panel flex h-[min(56vh,32rem)] w-full min-w-0 shrink-0 flex-col xl:h-full xl:w-[22rem] xl:min-w-[20rem] 2xl:w-[24rem]">
+          <div className="pos-cart-head flex shrink-0 items-center justify-between border-b border-slate-100 px-3 py-2 sm:px-4 sm:py-2.5">
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-slate-900 sm:text-base">Current Order</h2>
-              <p className="text-xs font-medium text-slate-500">
+              <h2 className="font-bold text-slate-900">Current Order</h2>
+              <p className="font-medium text-slate-500" style={{ fontSize: "var(--pos-font-sm)" }}>
                 {items.length} item{items.length !== 1 ? "s" : ""}
               </p>
             </div>
@@ -418,14 +418,16 @@ export default function POSPage() {
             </button>
           </div>
 
-          <div className="min-h-[7.5rem] flex-1 overflow-y-auto overscroll-contain px-2.5 py-2 sm:min-h-[9rem] sm:px-3 sm:py-2.5">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 py-2 sm:px-3">
             {items.length === 0 ? (
-              <div className="flex h-full min-h-[7rem] flex-col items-center justify-center py-6 text-center">
-                <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">
-                  <ShoppingBag className="h-6 w-6 text-slate-300" />
+              <div className="flex min-h-[6rem] flex-col items-center justify-center py-5 text-center">
+                <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100">
+                  <ShoppingBag className="h-5 w-5 text-slate-300" />
                 </div>
-                <p className="text-sm font-semibold text-slate-400">Cart is empty</p>
-                <p className="mt-1 text-xs text-slate-400">Tap a product to start</p>
+                <p className="font-semibold text-slate-400">Cart is empty</p>
+                <p className="mt-1 text-slate-400" style={{ fontSize: "var(--pos-font-sm)" }}>
+                  Tap a product to start
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -435,7 +437,7 @@ export default function POSPage() {
                   return (
                     <div
                       key={item.product.id}
-                      className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 sm:p-3"
+                      className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5"
                     >
                       <div className="flex items-start gap-2.5">
                         <ProductAvatar
@@ -447,7 +449,7 @@ export default function POSPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-1">
                             <p
-                              className="line-clamp-2 text-sm font-bold leading-snug text-slate-800"
+                              className="line-clamp-2 font-bold leading-snug text-slate-800"
                               title={item.product.name}
                             >
                               {item.product.name}
@@ -462,7 +464,8 @@ export default function POSPage() {
                             </button>
                           </div>
                           <p
-                            className="mt-0.5 text-xs font-medium text-slate-500"
+                            className="mt-0.5 font-medium text-slate-500"
+                            style={{ fontSize: "var(--pos-font-sm)" }}
                             title={formatCurrency(unitPrice, currencySymbol)}
                           >
                             {formatCurrency(unitPrice, currencySymbol)}
@@ -475,7 +478,6 @@ export default function POSPage() {
                         </div>
                       </div>
 
-                      {/* Qty controls on their own row so they never get clipped */}
                       <div className="mt-2 flex items-center justify-between gap-2">
                         <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-slate-200">
                           <button
@@ -488,7 +490,7 @@ export default function POSPage() {
                           >
                             <Minus className="h-4 w-4" />
                           </button>
-                          <span className="min-w-[1.75rem] text-center text-sm font-bold text-slate-900">
+                          <span className="min-w-[1.75rem] text-center font-bold text-slate-900">
                             {item.quantity}
                           </span>
                           <button
@@ -503,7 +505,7 @@ export default function POSPage() {
                           </button>
                         </div>
                         <span
-                          className="min-w-0 break-all text-right text-sm font-extrabold text-slate-900"
+                          className="min-w-0 break-all text-right font-extrabold text-slate-900"
                           title={formatCurrency(lineTotal, currencySymbol)}
                         >
                           {formatCurrency(lineTotal, currencySymbol)}
@@ -514,10 +516,8 @@ export default function POSPage() {
                 })}
               </div>
             )}
-          </div>
 
-          <div className="max-h-[58%] shrink-0 space-y-1.5 overflow-y-auto overscroll-contain border-t border-slate-100 bg-slate-50/40 p-2.5 sm:max-h-none sm:space-y-2 sm:p-3 xl:max-h-[55%] xl:overflow-y-auto">
-            <div className="space-y-1 text-sm sm:space-y-2">
+            <div className="mt-3 space-y-1.5 border-t border-slate-100 pt-3">
               <div className="flex items-center justify-between gap-2 font-medium text-slate-600">
                 <span className="shrink-0">Subtotal</span>
                 <span
@@ -533,7 +533,7 @@ export default function POSPage() {
                   type="number"
                   min="0"
                   step="0.01"
-                  className="input-field w-24 bg-white py-1.5 text-right text-sm font-semibold sm:w-28 sm:py-2"
+                  className="input-field w-24 bg-white py-1.5 text-right font-semibold sm:w-28"
                   value={discount || ""}
                   onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
                   placeholder="0.00"
@@ -544,7 +544,8 @@ export default function POSPage() {
                   <span className="font-medium text-slate-600">Tax %</span>
                   {tax > 0 && (
                     <p
-                      className="text-[11px] font-semibold text-slate-400"
+                      className="font-semibold text-slate-400"
+                      style={{ fontSize: "var(--pos-font-sm)" }}
                       title={formatCurrency(tax, currencySymbol)}
                     >
                       {formatCurrency(tax, currencySymbol)}
@@ -556,7 +557,7 @@ export default function POSPage() {
                   min="0"
                   max="100"
                   step="0.01"
-                  className="input-field w-24 bg-white py-1.5 text-right text-sm font-semibold sm:w-28 sm:py-2"
+                  className="input-field w-24 bg-white py-1.5 text-right font-semibold sm:w-28"
                   value={taxPercent || ""}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value);
@@ -569,52 +570,65 @@ export default function POSPage() {
                   placeholder="0"
                 />
               </div>
-              <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-900 px-3 py-2 shadow-lg sm:px-4 sm:py-3">
-                <span className="shrink-0 text-xs font-semibold text-slate-300 sm:text-sm">Total Payable</span>
+              <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-900 px-3 py-2 shadow-lg">
                 <span
-                  className="min-w-0 break-all text-right text-sm font-extrabold tracking-tight text-emerald-400 sm:text-lg"
+                  className="shrink-0 font-semibold text-slate-300"
+                  style={{ fontSize: "var(--pos-font-sm)" }}
+                >
+                  Total Payable
+                </span>
+                <span
+                  className="min-w-0 break-all text-right font-extrabold tracking-tight text-emerald-400"
+                  style={{ fontSize: "var(--pos-font-lg)" }}
                   title={formatCurrency(total, currencySymbol)}
                 >
                   {formatCurrency(total, currencySymbol)}
                 </span>
               </div>
-            </div>
 
-            <div>
-              <label className="mb-1 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-slate-500 sm:mb-1.5 sm:text-xs">
-                <Banknote className="h-3.5 w-3.5" />
-                Cash Received
-              </label>
+              <div>
+                <label
+                  className="mb-1 flex items-center gap-1.5 font-bold uppercase tracking-wide text-slate-500"
+                  style={{ fontSize: "var(--pos-font-sm)" }}
+                >
+                  <Banknote className="h-3.5 w-3.5" />
+                  Cash Received
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="input-field bg-white py-1.5 font-bold"
+                  style={{ fontSize: "var(--pos-font-lg)" }}
+                  placeholder="0.00"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                />
+              </div>
+
+              <div className="flex min-w-0 items-center justify-between gap-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-3 py-2">
+                <span className="shrink-0 font-bold text-emerald-800">Change</span>
+                <span
+                  className="min-w-0 break-all text-right font-extrabold text-emerald-700"
+                  style={{ fontSize: "var(--pos-font-lg)" }}
+                  title={formatCurrency(change, currencySymbol)}
+                >
+                  {formatCurrency(change, currencySymbol)}
+                </span>
+              </div>
+
               <input
-                type="number"
-                min="0"
-                step="0.01"
-                className="input-field bg-white py-1.5 text-base font-bold sm:py-2.5 sm:text-lg"
-                placeholder="0.00"
-                value={cashAmount}
-                onChange={(e) => setCashAmount(e.target.value)}
+                type="text"
+                className="pos-checkout-note input-field bg-white"
+                placeholder="Note (optional)"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
               />
             </div>
+          </div>
 
-            <div className="flex min-w-0 items-center justify-between gap-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-3 py-2 sm:px-4 sm:py-3">
-              <span className="shrink-0 text-sm font-bold text-emerald-800">Change</span>
-              <span
-                className="min-w-0 break-all text-right text-sm font-extrabold text-emerald-700 sm:text-lg"
-                title={formatCurrency(change, currencySymbol)}
-              >
-                {formatCurrency(change, currencySymbol)}
-              </span>
-            </div>
-
-            <input
-              type="text"
-              className="pos-checkout-note input-field bg-white text-sm"
-              placeholder="Note (optional)"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-
-            <label className="pos-checkout-print flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+          <div className="shrink-0 space-y-1.5 border-t border-slate-200 bg-white p-2.5 shadow-[0_-4px_12px_rgba(15,23,42,0.06)] sm:p-3">
+            <label className="pos-checkout-print flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-semibold text-slate-700">
               <input
                 type="checkbox"
                 checked={printReceipt}
@@ -629,7 +643,7 @@ export default function POSPage() {
               type="button"
               onClick={handleCompleteSale}
               disabled={processing || items.length === 0}
-              className="btn-primary w-full py-2.5 text-sm shadow-lg shadow-emerald-500/25 sm:py-3.5 sm:text-base"
+              className="pos-complete-btn btn-primary w-full py-2.5 shadow-lg shadow-emerald-500/25 sm:py-3"
             >
               {processing ? (
                 "Processing..."

@@ -127,16 +127,43 @@
   .pos-cart-panel {
     @apply flex min-h-0 flex-col overflow-hidden overscroll-contain rounded-2xl border border-slate-200/80 bg-white shadow-card;
   }
+
+  /* Font-only scale — layout/padding stays the same */
+  .pos-screen {
+    --pos-font: clamp(0.8rem, 0.72rem + 0.35vh, 0.875rem);
+    --pos-font-sm: clamp(0.68rem, 0.62rem + 0.25vh, 0.75rem);
+    --pos-font-lg: clamp(0.9rem, 0.8rem + 0.4vh, 1.05rem);
+    --pos-font-title: clamp(1rem, 0.9rem + 0.55vh, 1.5rem);
+  }
+
+  .pos-screen .pos-page-title {
+    font-size: var(--pos-font-title);
+  }
+
+  .pos-screen .pos-page-sub,
+  .pos-screen .pos-tile-stock,
+  .pos-screen .pos-cat-chip {
+    font-size: var(--pos-font-sm);
+  }
+
+  .pos-screen .pos-tile-name,
+  .pos-screen .pos-cart-panel,
+  .pos-screen .pos-cart-panel .input-field,
+  .pos-screen .pos-cart-panel .pos-checkout-print,
+  .pos-screen .pos-products-head .input-field {
+    font-size: var(--pos-font);
+  }
+
+  .pos-screen .pos-tile-price,
+  .pos-screen .pos-cart-panel .pos-complete-btn,
+  .pos-screen .pos-cart-head h2 {
+    font-size: var(--pos-font-lg);
+  }
 }
 
 @media (max-height: 820px) {
   .pos-cart-panel .pos-checkout-note {
     display: none;
-  }
-
-  .pos-cart-panel .pos-checkout-print {
-    padding-top: 0.35rem;
-    padding-bottom: 0.35rem;
   }
 }
 
