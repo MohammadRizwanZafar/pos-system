@@ -68,11 +68,14 @@ Then open http://localhost:9050
 
 ## Login
 
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | `superadmin@pos.com` | `admin0101` |
-| Owner | `admin@pos.com` | `password` |
-| Cashier | `cashier@pos.com` | `password` |
+Open the POS URL and sign in with your shop account.  
+Closing the browser or using **Logout** ends the session — log in again next time.
+
+| Role | Access |
+|------|--------|
+| Super Admin | Manage all shops on the platform |
+| Owner | Full shop control |
+| Cashier | POS, sales, returns |
 
 ---
 

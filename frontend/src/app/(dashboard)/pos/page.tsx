@@ -260,7 +260,7 @@ export default function POSPage() {
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden lg:flex-row lg:gap-3 xl:gap-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden xl:flex-row xl:gap-3 2xl:gap-4">
         {/* Products */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-card">
           <div className="space-y-2 border-b border-slate-100 p-2.5 sm:space-y-3 sm:p-4">
@@ -398,9 +398,9 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* Cart */}
-        <div className="pos-cart-panel h-[min(48vh,26rem)] w-full shrink-0 lg:h-full lg:w-[19rem] xl:w-[21rem] 2xl:w-[24rem]">
-          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-3 py-2.5 sm:px-4 sm:py-3.5">
+        {/* Cart — always visible; items scroll; checkout can scroll on short screens */}
+        <div className="pos-cart-panel h-[min(52vh,28rem)] w-full min-w-0 shrink-0 xl:h-full xl:w-[22rem] xl:min-w-[20rem] 2xl:w-[24rem]">
+          <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-3 py-2 sm:px-4 sm:py-3">
             <div className="min-w-0">
               <h2 className="text-sm font-bold text-slate-900 sm:text-base">Current Order</h2>
               <p className="text-xs font-medium text-slate-500">
@@ -418,86 +418,96 @@ export default function POSPage() {
             </button>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2 sm:px-4 sm:py-3">
+          <div className="min-h-[7.5rem] flex-1 overflow-y-auto overscroll-contain px-2.5 py-2 sm:min-h-[9rem] sm:px-3 sm:py-2.5">
             {items.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center py-10 text-center">
-                <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-                  <ShoppingBag className="h-8 w-8 text-slate-300" />
+              <div className="flex h-full min-h-[7rem] flex-col items-center justify-center py-6 text-center">
+                <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">
+                  <ShoppingBag className="h-6 w-6 text-slate-300" />
                 </div>
                 <p className="text-sm font-semibold text-slate-400">Cart is empty</p>
                 <p className="mt-1 text-xs text-slate-400">Tap a product to start</p>
               </div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {items.map((item) => {
                   const unitPrice = getProductSellPrice(item.product);
                   const lineTotal = unitPrice * item.quantity;
                   return (
                     <div
                       key={item.product.id}
-                      className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/60 p-3"
+                      className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5 sm:p-3"
                     >
-                      <ProductAvatar
-                        name={item.product.name}
-                        imageUrl={item.product.image_url}
-                        productId={item.product.id}
-                        size="sm"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-slate-800" title={item.product.name}>
-                          {item.product.name}
-                        </p>
-                        <p
-                          className="text-xs font-medium text-slate-500"
-                          title={formatCurrency(unitPrice, currencySymbol)}
-                        >
-                          {formatCurrency(unitPrice, currencySymbol)}
-                          {parseFloat(item.product.discount_percent || "0") > 0 && (
-                            <span className="ml-1 text-emerald-600">
-                              (-{parseFloat(item.product.discount_percent).toFixed(0)}%)
-                            </span>
-                          )}
-                        </p>
-                        <div className="mt-2 flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-0.5 rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-slate-200">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateQuantity(item.product.id, item.quantity - 1)
-                              }
-                              className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100"
+                      <div className="flex items-start gap-2.5">
+                        <ProductAvatar
+                          name={item.product.name}
+                          imageUrl={item.product.image_url}
+                          productId={item.product.id}
+                          size="sm"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-1">
+                            <p
+                              className="line-clamp-2 text-sm font-bold leading-snug text-slate-800"
+                              title={item.product.name}
                             >
-                              <Minus className="h-3.5 w-3.5" />
-                            </button>
-                            <span className="w-7 text-center text-sm font-bold text-slate-900">
-                              {item.quantity}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateQuantity(item.product.id, item.quantity + 1)
-                              }
-                              className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span
-                              className="text-sm font-extrabold text-slate-900"
-                              title={formatCurrency(lineTotal, currencySymbol)}
-                            >
-                              {formatCurrency(lineTotal, currencySymbol)}
-                            </span>
+                              {item.product.name}
+                            </p>
                             <button
                               type="button"
                               onClick={() => removeItem(item.product.id)}
-                              className="rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                              className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-red-50 hover:text-red-500"
+                              aria-label="Remove item"
                             >
                               <X className="h-4 w-4" />
                             </button>
                           </div>
+                          <p
+                            className="mt-0.5 text-xs font-medium text-slate-500"
+                            title={formatCurrency(unitPrice, currencySymbol)}
+                          >
+                            {formatCurrency(unitPrice, currencySymbol)}
+                            {parseFloat(item.product.discount_percent || "0") > 0 && (
+                              <span className="ml-1 text-emerald-600">
+                                (-{parseFloat(item.product.discount_percent).toFixed(0)}%)
+                              </span>
+                            )}
+                          </p>
                         </div>
+                      </div>
+
+                      {/* Qty controls on their own row so they never get clipped */}
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-white p-0.5 shadow-sm ring-1 ring-slate-200">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateQuantity(item.product.id, item.quantity - 1)
+                            }
+                            className="rounded-md p-2 text-slate-700 hover:bg-slate-100"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <span className="min-w-[1.75rem] text-center text-sm font-bold text-slate-900">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateQuantity(item.product.id, item.quantity + 1)
+                            }
+                            className="rounded-md p-2 text-slate-700 hover:bg-slate-100"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
+                        <span
+                          className="min-w-0 break-all text-right text-sm font-extrabold text-slate-900"
+                          title={formatCurrency(lineTotal, currencySymbol)}
+                        >
+                          {formatCurrency(lineTotal, currencySymbol)}
+                        </span>
                       </div>
                     </div>
                   );
@@ -506,7 +516,7 @@ export default function POSPage() {
             )}
           </div>
 
-          <div className="shrink-0 space-y-1.5 border-t border-slate-100 bg-slate-50/40 p-2.5 sm:space-y-2.5 sm:p-3.5">
+          <div className="max-h-[58%] shrink-0 space-y-1.5 overflow-y-auto overscroll-contain border-t border-slate-100 bg-slate-50/40 p-2.5 sm:max-h-none sm:space-y-2 sm:p-3 xl:max-h-[55%] xl:overflow-y-auto">
             <div className="space-y-1 text-sm sm:space-y-2">
               <div className="flex items-center justify-between gap-2 font-medium text-slate-600">
                 <span className="shrink-0">Subtotal</span>
@@ -604,15 +614,15 @@ export default function POSPage() {
               onChange={(e) => setNote(e.target.value)}
             />
 
-            <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
+            <label className="pos-checkout-print flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
               <input
                 type="checkbox"
                 checked={printReceipt}
                 onChange={(e) => setPrintReceipt(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                className="h-4 w-4 shrink-0 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
               />
-              <Printer className="h-4 w-4 text-slate-500" />
-              Print receipt after sale
+              <Printer className="h-4 w-4 shrink-0 text-slate-500" />
+              <span className="min-w-0 leading-snug">Print receipt after sale</span>
             </label>
 
             <button

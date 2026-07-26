@@ -133,7 +133,7 @@ export default function LoginPage() {
                 type="email"
                 required
                 className="input-field"
-                placeholder="admin@pos.com"
+                placeholder="you@shop.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />

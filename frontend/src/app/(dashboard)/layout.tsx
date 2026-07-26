@@ -157,14 +157,16 @@ export default function DashboardLayout({
         <main
           className={cn(
             "min-w-0 flex-1",
-            isPos ? "overflow-hidden p-2 sm:p-3 lg:p-4" : "overflow-auto p-3 sm:p-5 lg:p-6 xl:p-8"
+            isPos
+              ? "flex min-h-0 overflow-hidden p-2 sm:p-3 lg:p-3 xl:p-4"
+              : "overflow-auto p-3 sm:p-5 lg:p-6 xl:p-8"
           )}
         >
           <div
             className={cn(
-              "animate-fade-in",
+              "animate-fade-in min-h-0",
               isPos
-                ? "mx-auto flex h-[calc(100dvh-3.5rem)] flex-col lg:h-[calc(100dvh-2rem)] lg:max-h-none"
+                ? "mx-auto flex h-[calc(100dvh-3.75rem)] w-full min-w-0 flex-col lg:h-[calc(100dvh-1.5rem)]"
                 : "mx-auto max-w-7xl"
             )}
           >

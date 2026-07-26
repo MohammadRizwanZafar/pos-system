@@ -5,9 +5,28 @@ const USER_KEY = "pos_user";
 const TOKEN_AT_KEY = "pos_token_at";
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Session-only storage — cleared when the browser is closed. */
+function store(): Storage | null {
+  if (typeof window === "undefined") return null;
+  return window.sessionStorage;
+}
+
+/** Remove any leftover persistent login from older builds (localStorage). */
+function purgeLegacyLocalAuth(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(USER_KEY);
+    window.localStorage.removeItem(TOKEN_AT_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 function isTokenExpired(): boolean {
-  if (typeof window === "undefined") return true;
-  const raw = localStorage.getItem(TOKEN_AT_KEY);
+  const s = store();
+  if (!s) return true;
+  const raw = s.getItem(TOKEN_AT_KEY);
   if (!raw) return true;
   const loginAt = Number(raw);
   if (!Number.isFinite(loginAt)) return true;
@@ -15,8 +34,10 @@ function isTokenExpired(): boolean {
 }
 
 export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  const token = localStorage.getItem(TOKEN_KEY);
+  purgeLegacyLocalAuth();
+  const s = store();
+  if (!s) return null;
+  const token = s.getItem(TOKEN_KEY);
   if (!token) return null;
   if (isTokenExpired()) {
     clearAuth();
@@ -26,17 +47,22 @@ export function getToken(): string | null {
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-  localStorage.setItem(TOKEN_AT_KEY, String(Date.now()));
+  purgeLegacyLocalAuth();
+  const s = store();
+  if (!s) return;
+  s.setItem(TOKEN_KEY, token);
+  s.setItem(TOKEN_AT_KEY, String(Date.now()));
 }
 
 export function getUser(): User | null {
-  if (typeof window === "undefined") return null;
+  purgeLegacyLocalAuth();
+  const s = store();
+  if (!s) return null;
   if (isTokenExpired()) {
     clearAuth();
     return null;
   }
-  const raw = localStorage.getItem(USER_KEY);
+  const raw = s.getItem(USER_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as User;
@@ -46,13 +72,19 @@ export function getUser(): User | null {
 }
 
 export function setUser(user: User): void {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  purgeLegacyLocalAuth();
+  const s = store();
+  if (!s) return;
+  s.setItem(USER_KEY, JSON.stringify(user));
 }
 
 export function clearAuth(): void {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(USER_KEY);
-  localStorage.removeItem(TOKEN_AT_KEY);
+  purgeLegacyLocalAuth();
+  const s = store();
+  if (!s) return;
+  s.removeItem(TOKEN_KEY);
+  s.removeItem(USER_KEY);
+  s.removeItem(TOKEN_AT_KEY);
 }
 
 export function isAuthenticated(): boolean {

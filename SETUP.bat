@@ -186,10 +186,7 @@ echo.
 echo HOW TO STOP:
 echo Double-click STOP.bat
 echo.
-echo LOGINS:
-echo Platform Admin: superadmin@pos.com / admin0101
-echo Shop Owner:     admin@pos.com / password
-echo Cashier:        cashier@pos.com / password
+echo Login with the account created for your shop.
 ) > "%ROOT%\SHOPPOS-INFO.txt"
 
 echo.
@@ -203,11 +200,6 @@ echo   API base:           http://localhost:9051/api/v1
 echo.
 echo   NEXT: Double-click START.bat
 echo   ^(Laragon MySQL must be running^)
-echo.
-echo   LOGINS:
-echo   superadmin@pos.com / admin0101
-echo   admin@pos.com / password
-echo   cashier@pos.com / password
 echo.
 echo   Saved also in SHOPPOS-INFO.txt
 echo  ========================================

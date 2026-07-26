@@ -80,10 +80,6 @@ echo.
 echo   First open can take 10-20 sec while Next.js compiles.
 echo   Keep the two black windows open while using POS.
 echo   To stop: run STOP.bat  ^(or pos stop^)
-echo.
-echo   Logins:
-echo   superadmin@pos.com / admin0101
-echo   admin@pos.com / password
 echo  ========================================
 echo.
 

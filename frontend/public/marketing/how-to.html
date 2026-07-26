@@ -286,11 +286,6 @@ API base:        http://localhost:9051/api/v1</div>
       <div class="code">pos stop</div>
       <p>Or double-click <code>STOP.bat</code></p>
 
-      <h3>Demo logins</h3>
-      <div class="code">Platform Admin:  superadmin@pos.com / admin0101
-Shop Owner:      admin@pos.com / password
-Cashier:         cashier@pos.com / password</div>
-
       <h3>Docker (optional)</h3>
       <div class="code">git clone https://github.com/MohammadRizwanZafar/pos-system.git
 cd pos-system
@@ -301,30 +296,27 @@ docker compose up --build -d</div>
 
     <section id="login">
       <h2>Login</h2>
+      <p>Open the POS URL and sign in with your shop account. Closing the browser or using Logout ends the session — you will need to log in again.</p>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>Role</th>
-              <th>Email</th>
-              <th>Password</th>
+              <th>Access</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td>Super Admin</td>
-              <td><code>superadmin@pos.com</code></td>
-              <td><code>admin0101</code></td>
+              <td>Manage all shops on the platform</td>
             </tr>
             <tr>
               <td>Owner</td>
-              <td><code>admin@pos.com</code></td>
-              <td><code>password</code></td>
+              <td>Full shop control — products, reports, users, settings</td>
             </tr>
             <tr>
               <td>Cashier</td>
-              <td><code>cashier@pos.com</code></td>
-              <td><code>password</code></td>
+              <td>POS, sales history, and returns</td>
             </tr>
           </tbody>
         </table>

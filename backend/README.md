@@ -153,13 +153,6 @@ Generate app key (first time only):
 docker compose run --rm artisan key:generate
 ```
 
-## Default Login (after seed)
-
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@pos.com | password |
-| Cashier | cashier@pos.com | password |
-
 ## Response Format
 
 All API responses use a consistent JSON structure via the `ApiResponse` trait:
